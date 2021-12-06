@@ -17,7 +17,7 @@ func PrintTable(accounts *model.Accounts) {
 	t.SetTitle(strings.ToUpper("Accounts Details"))
 	t.SetCaption(fmt.Sprintf("Fetched at: %s", time.Now().Format("2006-01-02 15:04:05")))
 
-	t.AppendHeader(table.Row{"Account", "Token", "Balance", "Rewards", "Staked", "Unbonding", "Total"})
+	t.AppendHeader(table.Row{"Name","Account", "Token", "Balance", "Rewards", "Staked", "Unbonding", "Total"})
 
 	for acctIdx := range accounts.Entries {
 		account := accounts.Entries[acctIdx].AccountDetails
@@ -32,6 +32,7 @@ func PrintTable(accounts *model.Accounts) {
 			total := account.AvailableBalance[coin] + account.Rewards[coin] + account.Delegations[coin] + account.Unbondings[coin]
 			if idx == 0 {
 				t.AppendRow([]interface{}{
+					accounts.Entries[acctIdx].Name,
 					accounts.Entries[acctIdx].Address,
 					coin,
 					fmt.Sprintf("%f", account.AvailableBalance[coin]),
@@ -42,6 +43,7 @@ func PrintTable(accounts *model.Accounts) {
 				})
 			} else {
 				t.AppendRow([]interface{}{
+					"",
 					"",
 					coin,
 					fmt.Sprintf("%f", account.AvailableBalance[coin]),
