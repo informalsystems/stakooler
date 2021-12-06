@@ -8,6 +8,7 @@ import (
 	"github.com/informalsystems/stakooler/client/osmosis"
 	"math"
 	"strconv"
+	"strings"
 )
 
 func LoadAccountDetails(account *model.Account) (model.AccountDetails, error) {
@@ -57,7 +58,15 @@ func LoadAccountDetails(account *model.Account) (model.AccountDetails, error) {
 					convertedAmount := amount / math.Pow10(exponent)
 					accountDetails.AvailableBalance[symbol] = convertedAmount
 				} else {
-					accountDetails.AvailableBalance[symbol] = amount
+					denomMetadata, err := api.GetDenomMetadata(account, balance.Denom)
+					if err != nil {
+						return accountDetails, errors.New("cannot retrieve token denom metadata")
+					} else {
+						// Convert amount based on exponent
+						exponent := denomMetadata.GetExponent()
+						convertedAmount := amount / math.Pow10(exponent)
+						accountDetails.AvailableBalance[strings.ToUpper(denomMetadata.Metadata.Display)] = convertedAmount
+					}
 				}
 			}
 		}
@@ -77,7 +86,15 @@ func LoadAccountDetails(account *model.Account) (model.AccountDetails, error) {
 						convertedAmount := amount / math.Pow10(exponent)
 						accountDetails.Rewards[symbol] = convertedAmount
 					} else {
-						accountDetails.AvailableBalance[symbol] = amount
+						denomMetadata, err := api.GetDenomMetadata(account, reward.Reward[i].Denom)
+						if err != nil {
+							return accountDetails, errors.New("cannot retrieve token denom metadata")
+						} else {
+							// Convert amount based on exponent
+							exponent := denomMetadata.GetExponent()
+							convertedAmount := amount / math.Pow10(exponent)
+							accountDetails.Rewards[strings.ToUpper(denomMetadata.Metadata.Display)] = convertedAmount
+						}
 					}
 				}
 			}
@@ -97,7 +114,15 @@ func LoadAccountDetails(account *model.Account) (model.AccountDetails, error) {
 					convertedAmount := amount / math.Pow10(exponent)
 					accountDetails.Delegations[symbol] = convertedAmount
 				} else {
-					accountDetails.Delegations[symbol] = amount
+					denomMetadata, err := api.GetDenomMetadata(account, delegation.Balance.Denom)
+					if err != nil {
+						return accountDetails, errors.New("cannot retrieve token denom metadata")
+					} else {
+						//TODO: Convert amount based on exponent
+						exponent := denomMetadata.GetExponent()
+						convertedAmount := amount / math.Pow10(exponent)
+						accountDetails.Delegations[strings.ToUpper(denomMetadata.Metadata.Display)] = convertedAmount
+					}
 				}
 			}
 		}
@@ -121,8 +146,20 @@ func LoadAccountDetails(account *model.Account) (model.AccountDetails, error) {
 						convertedAmount := amount / math.Pow10(exponent)
 						accountDetails.Unbondings[symbol] = convertedAmount
 					} else {
-						//TODO: Improve this logic, if symbol is not found
-						accountDetails.AvailableBalance[symbol] = amount
+						// Use the mint params to get the denom since the unbonding response doesn't return that
+						mintParams, err := api.GetMintParams(account)
+						if err != nil {
+							return accountDetails, errors.New("cannot retrieve mint params")
+						}
+						denomMetadata, err := api.GetDenomMetadata(account, mintParams.Params.MintDenom)
+						if err != nil {
+							return accountDetails, errors.New("cannot retrieve token denom metadata")
+						} else {
+							// Convert amount based on exponent
+							exponent := denomMetadata.GetExponent()
+							convertedAmount := amount / math.Pow10(exponent)
+							accountDetails.Unbondings[strings.ToUpper(denomMetadata.Metadata.Display)] = convertedAmount
+						}
 					}
 				}
 			}

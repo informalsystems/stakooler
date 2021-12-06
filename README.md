@@ -1,6 +1,6 @@
 # Stakooler
 
-The koolest tool for stakers !
+The koolest (light) tool for stakers !
 
 ### Configuration
 
