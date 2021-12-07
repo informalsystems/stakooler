@@ -3,6 +3,7 @@ package querier
 import (
 	"errors"
 	"fmt"
+	"github.com/cosmos/cosmos-sdk/types/bech32"
 	"github.com/informalsystems/stakooler/client/cosmos/api"
 	"github.com/informalsystems/stakooler/client/cosmos/model"
 	"github.com/informalsystems/stakooler/client/osmosis"
@@ -17,6 +18,7 @@ func LoadAccountDetails(account *model.Account) (model.AccountDetails, error) {
 		Rewards:          make(map[string]float64),
 		Delegations:      make(map[string]float64),
 		Unbondings:       make(map[string]float64),
+		Commissions:      make(map[string]float64),
 	}
 
 	// Get available balancesResponse
@@ -165,6 +167,61 @@ func LoadAccountDetails(account *model.Account) (model.AccountDetails, error) {
 			}
 		}
 	}
+
+	// Get commissions
+	validator, err := GetValidatorAccount(account)
+	if err != nil {
+		return accountDetails, errors.New("cannot retrieve validator account")
+	} else {
+		commissions, err := api.GetCommissions(account, validator)
+		if err != nil {
+			return accountDetails, errors.New(fmt.Sprintf("Failed to get commissions: %s", err))
+		} else {
+			for i := range commissions.Commissions.Commission {
+				commission := commissions.Commissions.Commission[i]
+				amount, err := strconv.ParseFloat(commission.Amount, 1)
+				if err != nil {
+					return accountDetails, errors.New(fmt.Sprintf("Error converting amount: %s", err))
+				} else {
+					if amount > 0 {
+						symbol, found := assets.GetSymbol(commission.Denom)
+						if found {
+							exponent := assets.GetExponent(symbol)
+							convertedAmount := amount / math.Pow10(exponent)
+							accountDetails.Commissions[symbol] = convertedAmount
+						} else {
+							denomMetadata, err := api.GetDenomMetadata(account, commission.Denom)
+							if err != nil {
+								return accountDetails, errors.New("cannot retrieve token denom metadata")
+							} else {
+								// Convert amount based on exponent
+								exponent := denomMetadata.GetExponent()
+								convertedAmount := amount / math.Pow10(exponent)
+								accountDetails.Commissions[strings.ToUpper(denomMetadata.Metadata.Display)] = convertedAmount
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+
 	return accountDetails, nil
 }
+
+func GetValidatorAccount(account *model.Account) (string, error) {
+	acct, acctBytes, err := bech32.DecodeAndConvert(account.Address)
+	if err != nil {
+		fmt.Println("Error decoding", account.Address, " Error:", err)
+		return "", err
+	}
+
+	validatorAccount, err := bech32.ConvertAndEncode(acct + "valoper", acctBytes)
+	if err != nil {
+		fmt.Println("Error converting and encoding", account.Address, " Error:", err)
+		return "", err
+	}
+	return validatorAccount, nil
+}
+
 

@@ -11,13 +11,12 @@ import (
 	"time"
 )
 
-func PrintTable(accounts *model.Accounts) {
+func PrintAccountDetailsTable(accounts *model.Accounts) {
 	t := table.NewWriter()
 	t.SetOutputMirror(os.Stdout)
-	t.SetTitle(strings.ToUpper("Accounts Details"))
-	t.SetCaption(fmt.Sprintf("Fetched at: %s", time.Now().Format("2006-01-02 15:04:05")))
-
-	t.AppendHeader(table.Row{"Name","Account", "Token", "Balance", "Rewards", "Staked", "Unbonding", "Total"})
+	t.SetTitle(strings.ToUpper("Accounts | Details"))
+	t.SetCaption(fmt.Sprintf("Fetched: %s", time.Now().Format("2006-01-02 15:04:05")))
+	t.AppendHeader(table.Row{"Name","Account", "Token", "Balance", "Rewards", "Staked", "Unbonding", "Commissions", "Total"})
 
 	for acctIdx := range accounts.Entries {
 		account := accounts.Entries[acctIdx].AccountDetails
@@ -29,7 +28,11 @@ func PrintTable(accounts *model.Accounts) {
 		sort.Strings(keys)
 
 		for idx, coin := range keys {
-			total := account.AvailableBalance[coin] + account.Rewards[coin] + account.Delegations[coin] + account.Unbondings[coin]
+			total := account.AvailableBalance[coin] +
+				account.Rewards[coin] +
+				account.Delegations[coin] +
+				account.Unbondings[coin] +
+				account.Commissions[coin]
 			if idx == 0 {
 				t.AppendRow([]interface{}{
 					accounts.Entries[acctIdx].Name,
@@ -39,6 +42,7 @@ func PrintTable(accounts *model.Accounts) {
 					fmt.Sprintf("%f", account.Rewards[coin]),
 					fmt.Sprintf("%f", account.Delegations[coin]),
 					fmt.Sprintf("%f", account.Unbondings[coin]),
+					fmt.Sprintf("%f", account.Commissions[coin]),
 					fmt.Sprintf("%f", total),
 				})
 			} else {
@@ -50,6 +54,7 @@ func PrintTable(accounts *model.Accounts) {
 					fmt.Sprintf("%f", account.Rewards[coin]),
 					fmt.Sprintf("%f", account.Delegations[coin]),
 					fmt.Sprintf("%f", account.Unbondings[coin]),
+					fmt.Sprintf("%f", account.Commissions[coin]),
 					fmt.Sprintf("%f", total),
 				})
 			}
@@ -58,13 +63,13 @@ func PrintTable(accounts *model.Accounts) {
 	}
 
 	t.SetColumnConfigs([]table.ColumnConfig{
-		// TODO: Align address in the middle
-		{Name: "Account", Align: text.AlignCenter, AlignHeader: text.AlignCenter, VAlign: text.VAlignMiddle},
-
+		{Name: "Name", Align: text.AlignLeft, AlignHeader: text.AlignCenter},
+		{Name: "Account", Align: text.AlignLeft, AlignHeader: text.AlignCenter},
 		{Name: "Token", Align: text.AlignLeft, AlignHeader: text.AlignCenter},
 		{Name: "Balance", Align: text.AlignRight, AlignHeader: text.AlignCenter},
 		{Name: "Rewards", Align: text.AlignRight, AlignHeader: text.AlignCenter},
 		{Name: "Staked", Align: text.AlignRight, AlignHeader: text.AlignCenter},
+		{Name: "Commissions", Align: text.AlignRight, AlignHeader: text.AlignCenter},
 		{Name: "Total", Align: text.AlignRight, AlignHeader: text.AlignCenter},
 	})
 	t.Render()

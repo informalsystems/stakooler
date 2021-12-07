@@ -16,4 +16,5 @@ type AccountDetails struct {
 	Rewards          	map[string]float64
 	Delegations     	map[string]float64
 	Unbondings          map[string]float64
+	Commissions         map[string]float64
 }

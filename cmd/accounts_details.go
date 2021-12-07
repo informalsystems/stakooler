@@ -34,7 +34,7 @@ It shows tokens balance, rewards, delegation and unbonding values per account`,
 
 		}
 		// Print table information
-		display.PrintTable(&accounts)
+		display.PrintAccountDetailsTable(&accounts)
 	},
 }
 
