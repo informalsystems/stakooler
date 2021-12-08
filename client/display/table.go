@@ -14,9 +14,9 @@ import (
 func PrintAccountDetailsTable(accounts *model.Accounts) {
 	t := table.NewWriter()
 	t.SetOutputMirror(os.Stdout)
-	t.SetTitle(strings.ToUpper("Accounts | Details"))
+	t.SetTitle(strings.ToUpper("Accounts - Details"))
 	t.SetCaption(fmt.Sprintf("Fetched: %s", time.Now().Format("2006-01-02 15:04:05")))
-	t.AppendHeader(table.Row{"Name","Account", "Token", "Balance", "Rewards", "Staked", "Unbonding", "Commissions", "Total"})
+	t.AppendHeader(table.Row{"Name", "Account", "Token", "Balance", "Rewards", "Staked", "Unbonding", "Commissions", "Total"})
 
 	for acctIdx := range accounts.Entries {
 		account := accounts.Entries[acctIdx].AccountDetails
@@ -69,6 +69,7 @@ func PrintAccountDetailsTable(accounts *model.Accounts) {
 		{Name: "Balance", Align: text.AlignRight, AlignHeader: text.AlignCenter},
 		{Name: "Rewards", Align: text.AlignRight, AlignHeader: text.AlignCenter},
 		{Name: "Staked", Align: text.AlignRight, AlignHeader: text.AlignCenter},
+		{Name: "Unbonding", Align: text.AlignRight, AlignHeader: text.AlignCenter},
 		{Name: "Commissions", Align: text.AlignRight, AlignHeader: text.AlignCenter},
 		{Name: "Total", Align: text.AlignRight, AlignHeader: text.AlignCenter},
 	})

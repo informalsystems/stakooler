@@ -74,35 +74,34 @@ func LoadAccountDetails(account *model.Account) (model.AccountDetails, error) {
 		}
 	}
 
-	for i := range rewardsResponse.Rewards {
-		reward := rewardsResponse.Rewards[i]
-		for i := range reward.Reward {
-			amount, err := strconv.ParseFloat(reward.Reward[i].Amount, 1)
-			if err != nil {
-				return accountDetails, errors.New(fmt.Sprintf("Error converting amount: %s", err))
-			} else {
-				if amount > 0 {
-					symbol, found := assets.GetSymbol(reward.Reward[i].Denom)
-					if found {
-						exponent := assets.GetExponent(symbol)
-						convertedAmount := amount / math.Pow10(exponent)
-						accountDetails.Rewards[symbol] = convertedAmount
+	for i := range rewardsResponse.Total {
+		reward := rewardsResponse.Total[i]
+		amount, err := strconv.ParseFloat(reward.Amount, 1)
+		if err != nil {
+			return accountDetails, errors.New(fmt.Sprintf("Error converting amount: %s", err))
+		} else {
+			if amount > 0 {
+				symbol, found := assets.GetSymbol(reward.Denom)
+				if found {
+					exponent := assets.GetExponent(symbol)
+					convertedAmount := amount / math.Pow10(exponent)
+					accountDetails.Rewards[symbol] = convertedAmount
+				} else {
+					denomMetadata, err := api.GetDenomMetadata(account, reward.Denom)
+					if err != nil {
+						return accountDetails, errors.New("cannot retrieve token denom metadata")
 					} else {
-						denomMetadata, err := api.GetDenomMetadata(account, reward.Reward[i].Denom)
-						if err != nil {
-							return accountDetails, errors.New("cannot retrieve token denom metadata")
-						} else {
-							// Convert amount based on exponent
-							exponent := denomMetadata.GetExponent()
-							convertedAmount := amount / math.Pow10(exponent)
-							accountDetails.Rewards[strings.ToUpper(denomMetadata.Metadata.Display)] = convertedAmount
-						}
+						// Convert amount based on exponent
+						exponent := denomMetadata.GetExponent()
+						convertedAmount := amount / math.Pow10(exponent)
+						accountDetails.Rewards[strings.ToUpper(denomMetadata.Metadata.Display)] = convertedAmount
 					}
 				}
 			}
 		}
 	}
 
+	totalAmount := 0.0
 	for i := range delegations.DelegationResponses {
 		delegation := delegations.DelegationResponses[i]
 		amount, err := strconv.ParseFloat(delegation.Balance.Amount, 1)
@@ -114,7 +113,8 @@ func LoadAccountDetails(account *model.Account) (model.AccountDetails, error) {
 				if found {
 					exponent := assets.GetExponent(symbol)
 					convertedAmount := amount / math.Pow10(exponent)
-					accountDetails.Delegations[symbol] = convertedAmount
+					totalAmount += convertedAmount
+					accountDetails.Delegations[symbol] = totalAmount
 				} else {
 					denomMetadata, err := api.GetDenomMetadata(account, delegation.Balance.Denom)
 					if err != nil {
@@ -123,13 +123,15 @@ func LoadAccountDetails(account *model.Account) (model.AccountDetails, error) {
 						//TODO: Convert amount based on exponent
 						exponent := denomMetadata.GetExponent()
 						convertedAmount := amount / math.Pow10(exponent)
-						accountDetails.Delegations[strings.ToUpper(denomMetadata.Metadata.Display)] = convertedAmount
+						totalAmount += convertedAmount
+						accountDetails.Delegations[strings.ToUpper(denomMetadata.Metadata.Display)] = totalAmount
 					}
 				}
 			}
 		}
 	}
 
+	totalAmount = 0.0
 	for i := range unbondings.UnbondingResponses {
 		unbonding := unbondings.UnbondingResponses[i]
 		for i := range unbonding.Entries {
@@ -146,7 +148,8 @@ func LoadAccountDetails(account *model.Account) (model.AccountDetails, error) {
 					if found {
 						exponent := assets.GetExponent(symbol)
 						convertedAmount := amount / math.Pow10(exponent)
-						accountDetails.Unbondings[symbol] = convertedAmount
+						totalAmount += convertedAmount
+						accountDetails.Unbondings[symbol] = totalAmount
 					} else {
 						// Use the mint params to get the denom since the unbonding response doesn't return that
 						mintParams, err := api.GetMintParams(account)
@@ -160,7 +163,8 @@ func LoadAccountDetails(account *model.Account) (model.AccountDetails, error) {
 							// Convert amount based on exponent
 							exponent := denomMetadata.GetExponent()
 							convertedAmount := amount / math.Pow10(exponent)
-							accountDetails.Unbondings[strings.ToUpper(denomMetadata.Metadata.Display)] = convertedAmount
+							totalAmount += convertedAmount
+							accountDetails.Unbondings[strings.ToUpper(denomMetadata.Metadata.Display)] = totalAmount
 						}
 					}
 				}
@@ -216,12 +220,10 @@ func GetValidatorAccount(account *model.Account) (string, error) {
 		return "", err
 	}
 
-	validatorAccount, err := bech32.ConvertAndEncode(acct + "valoper", acctBytes)
+	validatorAccount, err := bech32.ConvertAndEncode(acct+"valoper", acctBytes)
 	if err != nil {
 		fmt.Println("Error converting and encoding", account.Address, " Error:", err)
 		return "", err
 	}
 	return validatorAccount, nil
 }
-
-
