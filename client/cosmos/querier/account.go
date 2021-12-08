@@ -58,7 +58,12 @@ func LoadAccountDetails(account *model.Account) (model.AccountDetails, error) {
 				if found {
 					exponent := assets.GetExponent(symbol)
 					convertedAmount := amount / math.Pow10(exponent)
-					accountDetails.AvailableBalance[symbol] = convertedAmount
+					if strings.HasPrefix(strings.ToUpper(balance.Denom), "IBC/") {
+						accountDetails.AvailableBalance[symbol+" (IBC)"] = convertedAmount
+					} else {
+						accountDetails.AvailableBalance[symbol] = convertedAmount
+					}
+
 				} else {
 					denomMetadata, err := api.GetDenomMetadata(account, balance.Denom)
 					if err != nil {
@@ -85,7 +90,11 @@ func LoadAccountDetails(account *model.Account) (model.AccountDetails, error) {
 				if found {
 					exponent := assets.GetExponent(symbol)
 					convertedAmount := amount / math.Pow10(exponent)
-					accountDetails.Rewards[symbol] = convertedAmount
+					if strings.HasPrefix(strings.ToUpper(reward.Denom), "IBC/") {
+						accountDetails.Rewards[symbol+" (IBC)"] = convertedAmount
+					} else {
+						accountDetails.Rewards[symbol] = convertedAmount
+					}
 				} else {
 					denomMetadata, err := api.GetDenomMetadata(account, reward.Denom)
 					if err != nil {
@@ -114,7 +123,11 @@ func LoadAccountDetails(account *model.Account) (model.AccountDetails, error) {
 					exponent := assets.GetExponent(symbol)
 					convertedAmount := amount / math.Pow10(exponent)
 					totalAmount += convertedAmount
-					accountDetails.Delegations[symbol] = totalAmount
+					if strings.HasPrefix(strings.ToUpper(delegation.Balance.Denom), "IBC/") {
+						accountDetails.Delegations[symbol+" (IBC)"] = totalAmount
+					} else {
+						accountDetails.Delegations[symbol] = totalAmount
+					}
 				} else {
 					denomMetadata, err := api.GetDenomMetadata(account, delegation.Balance.Denom)
 					if err != nil {
@@ -149,7 +162,11 @@ func LoadAccountDetails(account *model.Account) (model.AccountDetails, error) {
 						exponent := assets.GetExponent(symbol)
 						convertedAmount := amount / math.Pow10(exponent)
 						totalAmount += convertedAmount
-						accountDetails.Unbondings[symbol] = totalAmount
+						if strings.HasPrefix(strings.ToUpper(params.ParamsResponse.BondDenom), "IBC/") {
+							accountDetails.Unbondings[symbol+" (IBC)"] = totalAmount
+						} else {
+							accountDetails.Unbondings[symbol] = totalAmount
+						}
 					} else {
 						// Use the mint params to get the denom since the unbonding response doesn't return that
 						mintParams, err := api.GetMintParams(account)
@@ -173,6 +190,7 @@ func LoadAccountDetails(account *model.Account) (model.AccountDetails, error) {
 	}
 
 	// Get commissions
+	totalAmount = 0.0
 	validator, err := GetValidatorAccount(account)
 	if err != nil {
 		return accountDetails, errors.New("cannot retrieve validator account")
@@ -192,7 +210,12 @@ func LoadAccountDetails(account *model.Account) (model.AccountDetails, error) {
 						if found {
 							exponent := assets.GetExponent(symbol)
 							convertedAmount := amount / math.Pow10(exponent)
-							accountDetails.Commissions[symbol] = convertedAmount
+							totalAmount += convertedAmount
+							if strings.HasPrefix(strings.ToUpper(commission.Denom), "IBC/") {
+								accountDetails.Commissions[symbol+" (IBC)"] = totalAmount
+							} else {
+								accountDetails.Commissions[symbol] = totalAmount
+							}
 						} else {
 							denomMetadata, err := api.GetDenomMetadata(account, commission.Denom)
 							if err != nil {
