@@ -76,7 +76,7 @@ func (a *AssetsList) GetSymbol(denom string) (string, bool) {
 			return a.Assets[i].Symbol, true
 		}
 	}
-	return "", false
+	return denom, false
 }
 
 // Search for the exponent value based on the symbol. Look for value in

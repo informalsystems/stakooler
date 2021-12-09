@@ -72,7 +72,10 @@ func LoadAccountDetails(account *model.Account) (model.AccountDetails, error) {
 						// Convert amount based on exponent
 						exponent := denomMetadata.GetExponent()
 						convertedAmount := amount / math.Pow10(exponent)
-						accountDetails.AvailableBalance[strings.ToUpper(denomMetadata.Metadata.Display)] = convertedAmount
+						// Check if it's an Osmosis Pool, if so then skip it. Will add support for LP later
+						if !strings.HasPrefix(strings.ToUpper(balance.Denom), "GAMM/POOL/") {
+							accountDetails.AvailableBalance[strings.ToUpper(denomMetadata.Metadata.Display)] = convertedAmount
+						}
 					}
 				}
 			}
