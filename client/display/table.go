@@ -38,24 +38,24 @@ func PrintAccountDetailsTable(accounts *model.Accounts) {
 					accounts.Entries[acctIdx].Name,
 					accounts.Entries[acctIdx].Address,
 					coin,
-					fmt.Sprintf("%f", account.AvailableBalance[coin]),
-					fmt.Sprintf("%f", account.Rewards[coin]),
-					fmt.Sprintf("%f", account.Delegations[coin]),
-					fmt.Sprintf("%f", account.Unbondings[coin]),
-					fmt.Sprintf("%f", account.Commissions[coin]),
-					fmt.Sprintf("%f", total),
+					FilterZeroValue(account.AvailableBalance[coin]),
+					FilterZeroValue(account.Rewards[coin]),
+					FilterZeroValue(account.Delegations[coin]),
+					FilterZeroValue(account.Unbondings[coin]),
+					FilterZeroValue(account.Commissions[coin]),
+					FilterZeroValue(total),
 				})
 			} else {
 				t.AppendRow([]interface{}{
 					"",
 					"",
 					coin,
-					fmt.Sprintf("%f", account.AvailableBalance[coin]),
-					fmt.Sprintf("%f", account.Rewards[coin]),
-					fmt.Sprintf("%f", account.Delegations[coin]),
-					fmt.Sprintf("%f", account.Unbondings[coin]),
-					fmt.Sprintf("%f", account.Commissions[coin]),
-					fmt.Sprintf("%f", total),
+					FilterZeroValue(account.AvailableBalance[coin]),
+					FilterZeroValue(account.Rewards[coin]),
+					FilterZeroValue(account.Delegations[coin]),
+					FilterZeroValue(account.Unbondings[coin]),
+					FilterZeroValue(account.Commissions[coin]),
+					FilterZeroValue(total),
 				})
 			}
 		}
@@ -75,4 +75,12 @@ func PrintAccountDetailsTable(accounts *model.Accounts) {
 	})
 	t.Render()
 	return
+}
+
+func FilterZeroValue(value float64) string {
+	if value > 0.00000 {
+		return fmt.Sprintf("%f", value)
+	} else {
+		return ""
+	}
 }
