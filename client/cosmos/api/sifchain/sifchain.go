@@ -74,9 +74,34 @@ func (a *SifchainTokenRegistry) GetSymbolExponent(denom string) (string, int) {
 			if err != nil {
 				return a.Tokens[i].Denom, 0
 			} else {
-				return a.Tokens[i].Denom, decimals
+				return GetDisplayName(a.Tokens[i].BaseDenom), decimals
 			}
 		}
 	}
 	return denom, 0
+}
+
+func GetDisplayName(baseDenom string) string {
+	switch baseDenom {
+	case strings.ToLower("uatom"):
+		return "ATOM"
+	case strings.ToLower("uosmo"):
+		return "OSMO"
+	case strings.ToLower("uakt"):
+		return "AKASH"
+	case strings.ToLower("uiris"):
+		return "IRIS"
+	case strings.ToLower("uregen"):
+		return "REGEN"
+	case strings.ToLower("uxprt"):
+		return "XPRT"
+	case strings.ToLower("ujuno"):
+		return "JUNO"
+	case strings.ToLower("uixo"):
+		return "IXO"
+	case strings.ToLower("udvpn"):
+		return "DVPN"
+	default:
+		return strings.ToUpper(baseDenom)
+	}
 }
