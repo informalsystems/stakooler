@@ -8,7 +8,8 @@ import (
 	"strings"
 )
 
-type AssetsList struct {
+// Assets List metadata used by Osmosis for coin denominations
+type OsmosisAssetsList struct {
 	ChainID string `json:"chain_id"`
 	Assets  []struct {
 		Description string `json:"description,omitempty"`
@@ -35,9 +36,9 @@ type AssetsList struct {
 }
 
 // Get Assets List metadata hosted in Github and it is used by Osmosis
-func GetAssetsList() (AssetsList, error) {
+func GetAssetsList() (OsmosisAssetsList, error) {
 
-	assetsList := AssetsList{}
+	assetsList := OsmosisAssetsList{}
 	url := "https://raw.githubusercontent.com/osmosis-labs/assetlists/main/osmosis-1/osmosis-1.assetlist.json"
 	method := "GET"
 
@@ -69,25 +70,16 @@ func GetAssetsList() (AssetsList, error) {
 }
 
 // Searches for the symbol for a particular denom in the assets list
-// Returns the symbol and a boolean (true if found, or false if not)
-func (a *AssetsList) GetSymbol(denom string) (string, bool) {
+// Returns the symbol and exponent
+func (a *OsmosisAssetsList) GetSymbolExponent(denom string) (string, int) {
 	for i := range a.Assets {
 		if strings.ToUpper(a.Assets[i].Base) == strings.ToUpper(denom) {
-			return a.Assets[i].Symbol, true
-		}
-	}
-	return denom, false
-}
-
-// Search for the exponent value based on the symbol. Look for value in
-// the denom units of the assets list
-func (a *AssetsList) GetExponent(symbol string) int {
-	for i := range a.Assets {
-		for j := range a.Assets[i].DenomUnits {
-			if strings.ToUpper(a.Assets[i].DenomUnits[j].Denom) == strings.ToUpper(symbol) {
-				return a.Assets[i].DenomUnits[j].Exponent
+			for j := range a.Assets[i].DenomUnits {
+				if strings.ToUpper(a.Assets[i].DenomUnits[j].Denom) == strings.ToUpper(a.Assets[i].Display) {
+					return a.Assets[i].Symbol, a.Assets[i].DenomUnits[j].Exponent
+				}
 			}
 		}
 	}
-	return 0
+	return denom, 0
 }
