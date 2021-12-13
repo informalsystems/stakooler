@@ -9,6 +9,8 @@ import (
 	"os"
 )
 
+var flagCsv *bool
+
 // represents the 'accounts details' command
 var accountDetailsCmd = &cobra.Command{
 	Use:   "details",
@@ -30,14 +32,19 @@ It shows tokens balance, rewards, delegation and unbonding values per account`,
 				os.Exit(1)
 			}
 		}
-		// Print table information
-		display.PrintAccountDetailsTable(&accounts)
 
-		// If csv flag write csv file
-		display.WriteCSV(&accounts)
+		// If csv flag specified use csv output
+		if *flagCsv {
+			// write csv file
+			display.WriteCSV(&accounts)
+		} else {
+			// Print table information
+			display.PrintAccountDetailsTable(&accounts)
+		}
 	},
 }
 
 func init() {
+	flagCsv = accountDetailsCmd.Flags().BoolP("csv", "c", false, "output the result to a csv format")
 	accountsCmd.AddCommand(accountDetailsCmd)
 }
