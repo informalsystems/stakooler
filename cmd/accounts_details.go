@@ -34,7 +34,7 @@ It shows tokens balance, rewards, delegation and unbonding values per account`,
 		display.PrintAccountDetailsTable(&accounts)
 
 		// If csv flag write csv file
-		//display.WriteCSV(&accounts)
+		display.WriteCSV(&accounts)
 	},
 }
 
