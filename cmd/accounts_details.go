@@ -24,17 +24,17 @@ It shows tokens balance, rewards, delegation and unbonding values per account`,
 		}
 		// Load each account details
 		for _, acct := range accounts.Entries {
-			acctDetails, err := querier.LoadAccountDetails(acct)
+			err := querier.LoadTokenInfo(acct)
 			if err != nil {
-				fmt.Println("failed to retrieved",acct.Address,"details:",err)
+				fmt.Println("failed to retrieved", acct.Address, "details:", err)
 				os.Exit(1)
-			} else {
-				acct.AccountDetails = acctDetails
 			}
-
 		}
 		// Print table information
 		display.PrintAccountDetailsTable(&accounts)
+
+		// If csv flag write csv file
+		//display.WriteCSV(&accounts)
 	},
 }
 

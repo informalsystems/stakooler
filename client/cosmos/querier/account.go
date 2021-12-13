@@ -11,6 +11,7 @@ import (
 	"math"
 	"strconv"
 	"strings"
+	"time"
 )
 
 const zeroAmount = 0.00000
@@ -20,35 +21,33 @@ type TokenDetail struct {
 	Precision int
 }
 
-func LoadAccountDetails(account *model.Account) (model.AccountDetails, error) {
-	accountDetails := model.AccountDetails{
-		AvailableBalance: make(map[string]float64),
-		Rewards:          make(map[string]float64),
-		Delegations:      make(map[string]float64),
-		Unbondings:       make(map[string]float64),
-		Commissions:      make(map[string]float64),
-	}
+func LoadTokenInfo(account *model.Account) error {
+
+	var tokens []model.TokenEntry
 
 	// Get Balances
 	balancesResponse, err := api.GetBalances(account)
 	if err != nil {
-		return accountDetails, errors.New(fmt.Sprintf("failed to get balances: %s", err))
+		return errors.New(fmt.Sprintf("failed to get balances: %s", err))
 	}
 
-	//totalAmount := 0.0
 	for i := range balancesResponse.Balances {
 		balance := balancesResponse.Balances[i]
-		token := GetTokenDetails(balance.Denom, *account)
+		metadata := GetTokenMetadata(balance.Denom, *account)
+		token := model.TokenEntry{}
+		token.DisplayName = metadata.Symbol
+		token.Denom = balance.Denom
+		token.Time = time.Now()
 		amount, err := strconv.ParseFloat(balance.Amount, 1)
 		if err != nil {
-			return accountDetails, errors.New(fmt.Sprintf("error converting balance amount: %s", err))
+			return errors.New(fmt.Sprintf("error converting balance amount: %s", err))
 		} else {
 			if amount > zeroAmount {
 				// Skip liquidity pools
-				if !strings.HasPrefix(strings.ToUpper(token.Symbol), "GAMM/POOL/") {
-					convertedAmount := amount / math.Pow10(token.Precision)
-					//totalAmount += convertedAmount
-					accountDetails.AvailableBalance[token.Symbol] = convertedAmount
+				if !strings.HasPrefix(strings.ToUpper(metadata.Symbol), "GAMM/POOL/") {
+					convertedAmount := amount / math.Pow10(metadata.Precision)
+					token.Balance = convertedAmount
+					tokens = append(tokens, token)
 				}
 			}
 		}
@@ -57,21 +56,25 @@ func LoadAccountDetails(account *model.Account) (model.AccountDetails, error) {
 	// Get Rewards
 	rewardsResponse, err := api.GetRewards(account)
 	if err != nil {
-		return accountDetails, errors.New(fmt.Sprintf("failed to get rewards: %s", err))
+		return errors.New(fmt.Sprintf("failed to get rewards: %s", err))
 	}
 
 	totalAmount := 0.0
 	for i := range rewardsResponse.Total {
 		reward := rewardsResponse.Total[i]
-		token := GetTokenDetails(reward.Denom, *account)
+		metadata := GetTokenMetadata(reward.Denom, *account)
 		amount, err := strconv.ParseFloat(reward.Amount, 1)
 		if err != nil {
-			return accountDetails, errors.New(fmt.Sprintf("error converting rewards amount: %s", err))
+			return errors.New(fmt.Sprintf("error converting rewards amount: %s", err))
 		} else {
 			if amount > zeroAmount {
-				convertedAmount := amount / math.Pow10(token.Precision)
+				convertedAmount := amount / math.Pow10(metadata.Precision)
 				totalAmount += convertedAmount
-				accountDetails.Rewards[token.Symbol] = totalAmount
+				for i := range tokens {
+					if strings.ToLower(tokens[i].Denom) == strings.ToLower(reward.Denom) {
+						tokens[i].Reward = totalAmount
+					}
+				}
 			}
 		}
 	}
@@ -79,21 +82,25 @@ func LoadAccountDetails(account *model.Account) (model.AccountDetails, error) {
 	// Get Delegations
 	delegations, err := api.GetDelegations(account)
 	if err != nil {
-		return accountDetails, errors.New(fmt.Sprintf("failed to get delegations: %s", err))
+		return errors.New(fmt.Sprintf("failed to get delegations: %s", err))
 	}
 
 	totalAmount = 0.0
 	for i := range delegations.DelegationResponses {
 		delegation := delegations.DelegationResponses[i]
-		token := GetTokenDetails(delegation.Balance.Denom, *account)
+		metadata := GetTokenMetadata(delegation.Balance.Denom, *account)
 		amount, err := strconv.ParseFloat(delegation.Balance.Amount, 1)
 		if err != nil {
-			return accountDetails, errors.New(fmt.Sprintf("error converting delegation amount: %s", err))
+			return errors.New(fmt.Sprintf("error converting delegation amount: %s", err))
 		} else {
 			if amount > zeroAmount {
-				convertedAmount := amount / math.Pow10(token.Precision)
+				convertedAmount := amount / math.Pow10(metadata.Precision)
 				totalAmount += convertedAmount
-				accountDetails.Delegations[token.Symbol] = totalAmount
+				for i := range tokens {
+					if strings.ToLower(tokens[i].Denom) == strings.ToLower(delegation.Balance.Denom) {
+						tokens[i].Delegation = totalAmount
+					}
+				}
 			}
 		}
 	}
@@ -101,7 +108,7 @@ func LoadAccountDetails(account *model.Account) (model.AccountDetails, error) {
 	//Get Unbondings
 	unbondings, err := api.GetUnbondings(account)
 	if err != nil {
-		return accountDetails, errors.New(fmt.Sprintf("failed to get unbondings: %s", err))
+		return errors.New(fmt.Sprintf("failed to get unbondings: %s", err))
 	}
 
 	totalAmount = 0.0
@@ -110,17 +117,21 @@ func LoadAccountDetails(account *model.Account) (model.AccountDetails, error) {
 		for i := range unbonding.Entries {
 			params, err := api.GetStakingParams(account)
 			if err != nil {
-				return accountDetails, errors.New(fmt.Sprintf("failed to get staking params: %s", err))
+				return errors.New(fmt.Sprintf("failed to get staking params: %s", err))
 			}
-			token := GetTokenDetails(params.ParamsResponse.BondDenom, *account)
+			metadata := GetTokenMetadata(params.ParamsResponse.BondDenom, *account)
 			amount, err := strconv.ParseFloat(unbonding.Entries[i].Balance, 1)
 			if err != nil {
-				return accountDetails, errors.New(fmt.Sprintf("error converting unbonding amount: %s", err))
+				return errors.New(fmt.Sprintf("error converting unbonding amount: %s", err))
 			} else {
 				if amount > zeroAmount {
-					convertedAmount := amount / math.Pow10(token.Precision)
+					convertedAmount := amount / math.Pow10(metadata.Precision)
 					totalAmount += convertedAmount
-					accountDetails.Unbondings[token.Symbol] = totalAmount
+					for i := range tokens {
+						if strings.ToLower(tokens[i].Denom) == strings.ToLower(params.ParamsResponse.BondDenom) {
+							tokens[i].Unbonding = totalAmount
+						}
+					}
 				}
 			}
 		}
@@ -130,30 +141,34 @@ func LoadAccountDetails(account *model.Account) (model.AccountDetails, error) {
 	totalAmount = 0.0
 	validator, err := GetValidatorAccount(account)
 	if err != nil {
-		return accountDetails, errors.New("cannot retrieve validator account")
+		return errors.New("cannot retrieve validator account")
 	} else {
 		commissions, err := api.GetCommissions(account, validator)
 		if err != nil {
-			return accountDetails, errors.New(fmt.Sprintf("Failed to get commissions: %s", err))
+			return errors.New(fmt.Sprintf("Failed to get commissions: %s", err))
 		} else {
 			for i := range commissions.Commissions.Commission {
 				commission := commissions.Commissions.Commission[i]
-				token := GetTokenDetails(commission.Denom, *account)
+				metadata := GetTokenMetadata(commission.Denom, *account)
 				amount, err := strconv.ParseFloat(commission.Amount, 1)
 				if err != nil {
-					return accountDetails, errors.New(fmt.Sprintf("error converting commission amount: %s", err))
+					return errors.New(fmt.Sprintf("error converting commission amount: %s", err))
 				} else {
 					if amount > zeroAmount {
-						convertedAmount := amount / math.Pow10(token.Precision)
+						convertedAmount := amount / math.Pow10(metadata.Precision)
 						totalAmount += convertedAmount
-						accountDetails.Commissions[token.Symbol] = totalAmount
+						for i := range tokens {
+							if strings.ToLower(tokens[i].Denom) == strings.ToLower(commission.Denom) {
+								tokens[i].Commission = totalAmount
+							}
+						}
 					}
 				}
 			}
 		}
 	}
-
-	return accountDetails, nil
+	account.TokensEntry = tokens
+	return nil
 }
 
 // This function checks if the denom is for a chain (e.g. Osmosis or Sifchain)
@@ -161,7 +176,7 @@ func LoadAccountDetails(account *model.Account) (model.AccountDetails, error) {
 // or the liquitiy pools. The function returns the UI friendly name and the exponent
 // used by the denom. If there are any errors just return the denom and 0 for
 // the precision exponent
-func GetTokenDetails(denom string, account model.Account) TokenDetail {
+func GetTokenMetadata(denom string, account model.Account) TokenDetail {
 	symbol := denom
 	precision := 0
 	bech32Prefix, _, _ := bech32.DecodeAndConvert(account.Address)

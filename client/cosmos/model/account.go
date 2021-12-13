@@ -1,20 +1,25 @@
 package model
 
+import "time"
+
 type Accounts struct {
-	Entries	[]*Account
+	Entries			[]*Account
 }
 
 type Account struct {
-	Name           string
-	Address        string
-	Chain	       Chain
-	AccountDetails AccountDetails
+	Name			string
+	Address     	string
+	Chain	    	Chain
+	TokensEntry		[]TokenEntry
 }
 
-type AccountDetails struct {
-	AvailableBalance 	map[string]float64
-	Rewards          	map[string]float64
-	Delegations     	map[string]float64
-	Unbondings          map[string]float64
-	Commissions         map[string]float64
+type TokenEntry struct {
+	DisplayName		string
+	Denom			string
+	Time	        time.Time
+	Balance 		float64
+	Reward        	float64
+	Delegation   	float64
+	Unbonding 	    float64
+	Commission     	float64
 }

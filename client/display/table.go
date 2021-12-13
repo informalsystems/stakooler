@@ -6,7 +6,6 @@ import (
 	"github.com/jedib0t/go-pretty/v6/table"
 	"github.com/jedib0t/go-pretty/v6/text"
 	"os"
-	"sort"
 	"strings"
 	"time"
 )
@@ -19,45 +18,37 @@ func PrintAccountDetailsTable(accounts *model.Accounts) {
 	t.AppendHeader(table.Row{"Name", "Account", "Token", "Balance", "Rewards", "Staked", "Unbonding", "Commissions", "Total"})
 
 	for acctIdx := range accounts.Entries {
-		account := accounts.Entries[acctIdx].AccountDetails
+		entries := accounts.Entries[acctIdx].TokensEntry
 		// To store the keys in slice in sorted order
-		keys := make([]string, 0, len(account.AvailableBalance))
-		for k := range account.AvailableBalance {
-			keys = append(keys, k)
-		}
-		sort.Strings(keys)
 
-		for idx, coin := range keys {
-			total := account.AvailableBalance[coin] +
-				account.Rewards[coin] +
-				account.Delegations[coin] +
-				account.Unbondings[coin] +
-				account.Commissions[coin]
-			if idx == 0 {
+		for i := range accounts.Entries[acctIdx].TokensEntry {
+			total := entries[i].Balance + entries[i].Reward + entries[i].Delegation + entries[i].Unbonding + entries[i].Commission
+			if i == 0 {
 				t.AppendRow([]interface{}{
 					accounts.Entries[acctIdx].Name,
 					accounts.Entries[acctIdx].Address,
-					coin,
-					FilterZeroValue(account.AvailableBalance[coin]),
-					FilterZeroValue(account.Rewards[coin]),
-					FilterZeroValue(account.Delegations[coin]),
-					FilterZeroValue(account.Unbondings[coin]),
-					FilterZeroValue(account.Commissions[coin]),
+					accounts.Entries[acctIdx].TokensEntry[i].DisplayName,
+					FilterZeroValue(accounts.Entries[acctIdx].TokensEntry[i].Balance),
+					FilterZeroValue(accounts.Entries[acctIdx].TokensEntry[i].Reward),
+					FilterZeroValue(accounts.Entries[acctIdx].TokensEntry[i].Delegation),
+					FilterZeroValue(accounts.Entries[acctIdx].TokensEntry[i].Unbonding),
+					FilterZeroValue(accounts.Entries[acctIdx].TokensEntry[i].Commission),
 					FilterZeroValue(total),
 				})
 			} else {
 				t.AppendRow([]interface{}{
 					"",
 					"",
-					coin,
-					FilterZeroValue(account.AvailableBalance[coin]),
-					FilterZeroValue(account.Rewards[coin]),
-					FilterZeroValue(account.Delegations[coin]),
-					FilterZeroValue(account.Unbondings[coin]),
-					FilterZeroValue(account.Commissions[coin]),
+					accounts.Entries[acctIdx].TokensEntry[i].DisplayName,
+					FilterZeroValue(accounts.Entries[acctIdx].TokensEntry[i].Balance),
+					FilterZeroValue(accounts.Entries[acctIdx].TokensEntry[i].Reward),
+					FilterZeroValue(accounts.Entries[acctIdx].TokensEntry[i].Delegation),
+					FilterZeroValue(accounts.Entries[acctIdx].TokensEntry[i].Unbonding),
+					FilterZeroValue(accounts.Entries[acctIdx].TokensEntry[i].Commission),
 					FilterZeroValue(total),
 				})
 			}
+
 		}
 		t.AppendSeparator()
 	}
