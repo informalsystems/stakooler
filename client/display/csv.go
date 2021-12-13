@@ -6,6 +6,7 @@ import (
 	"github.com/informalsystems/stakooler/client/cosmos/model"
 	"log"
 	"os"
+	"time"
 )
 
 func WriteCSV(accounts *model.Accounts) {
@@ -19,7 +20,7 @@ func WriteCSV(accounts *model.Accounts) {
 	w := csv.NewWriter(f)
 	defer w.Flush()
 
-	header := []string{"Name", "Account", "Token", "Balance", "Rewards", "Staked", "Unbonding", "Commissions", "Total"}
+	header := []string{"account_name", "account_address", "chain_id", "block_height", "block_time", "token", "denom", "balance", "rewards", "staked", "unbonding", "commissions", "total"}
 	if err := w.Write(header); err != nil {
 		log.Fatalln("error writing record to file", err)
 	}
@@ -30,7 +31,11 @@ func WriteCSV(accounts *model.Accounts) {
 			record := []string{
 				accounts.Entries[acctIdx].Name,
 				accounts.Entries[acctIdx].Address,
+				accounts.Entries[acctIdx].Chain.ID,
+				accounts.Entries[acctIdx].TokensEntry[i].BlockHeight,
+				accounts.Entries[acctIdx].TokensEntry[i].BlockTime.Format(time.RFC3339Nano),
 				accounts.Entries[acctIdx].TokensEntry[i].DisplayName,
+				accounts.Entries[acctIdx].TokensEntry[i].Denom,
 				fmt.Sprintf("%f", accounts.Entries[acctIdx].TokensEntry[i].Balance),
 				fmt.Sprintf("%f", accounts.Entries[acctIdx].TokensEntry[i].Reward),
 				fmt.Sprintf("%f", accounts.Entries[acctIdx].TokensEntry[i].Delegation),

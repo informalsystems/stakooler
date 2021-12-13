@@ -11,7 +11,6 @@ import (
 	"math"
 	"strconv"
 	"strings"
-	"time"
 )
 
 const zeroAmount = 0.00000
@@ -25,6 +24,13 @@ func LoadTokenInfo(account *model.Account) error {
 
 	var tokens []model.TokenEntry
 
+	// Get Latest Block Information
+	// Use the same block information for all the entries
+	blockResponse, err := api.GetLatestBlock(account)
+	if err != nil {
+		return errors.New(fmt.Sprintf("failed to get latest block: %s", err))
+	}
+
 	// Get Balances
 	balancesResponse, err := api.GetBalances(account)
 	if err != nil {
@@ -37,7 +43,8 @@ func LoadTokenInfo(account *model.Account) error {
 		token := model.TokenEntry{}
 		token.DisplayName = metadata.Symbol
 		token.Denom = balance.Denom
-		token.Time = time.Now()
+		token.BlockTime = blockResponse.Block.Header.Time
+		token.BlockHeight = blockResponse.Block.Header.Height
 		amount, err := strconv.ParseFloat(balance.Amount, 1)
 		if err != nil {
 			return errors.New(fmt.Sprintf("error converting balance amount: %s", err))
