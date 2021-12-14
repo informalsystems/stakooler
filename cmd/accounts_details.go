@@ -2,12 +2,14 @@ package cmd
 
 import (
 	"fmt"
+	"github.com/informalsystems/stakooler/client/cosmos/model"
 	"github.com/informalsystems/stakooler/client/cosmos/querier"
 	"github.com/informalsystems/stakooler/client/display"
 	"github.com/informalsystems/stakooler/config"
 	"github.com/schollz/progressbar/v3"
 	"github.com/spf13/cobra"
 	"os"
+	"sync"
 )
 
 var flagCsv *bool
@@ -25,6 +27,8 @@ It shows tokens balance, rewards, delegation and unbonding values per account`,
 			fmt.Println("errors reading configuration", err)
 			os.Exit(1)
 		}
+
+		var wg sync.WaitGroup
 
 		// Progress bar
 		// iterations are the api calls number times the number of accounts
@@ -47,16 +51,20 @@ It shows tokens balance, rewards, delegation and unbonding values per account`,
 
 		// Load each account details
 		for _, acct := range accounts.Entries {
+			wg.Add(1)
 			bar.Describe(fmt.Sprintf("Getting account %s details", acct.Address))
-			err := querier.LoadTokenInfo(acct, bar)
-			if err != nil {
-				fmt.Println("failed to retrieved", acct.Address, "details:", err)
-				os.Exit(1)
-			}
+			go func(account *model.Account) {
+				err := querier.LoadTokenInfo(account)
+				defer wg.Done()
+				if err != nil {
+					fmt.Println("failed to retrieved", acct.Address, "details:", err)
+					os.Exit(1)
+				}
+			}(acct)
 		}
 
-		// Hide bar
-		bar.Finish()
+		// Wait for load token info tasks to finish
+		wg.Wait()
 
 		// If csv flag specified use csv output
 		if *flagCsv {

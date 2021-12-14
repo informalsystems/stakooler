@@ -8,7 +8,6 @@ import (
 	"github.com/informalsystems/stakooler/client/cosmos/api/osmosis"
 	"github.com/informalsystems/stakooler/client/cosmos/api/sifchain"
 	"github.com/informalsystems/stakooler/client/cosmos/model"
-	"github.com/schollz/progressbar/v3"
 	"math"
 	"strconv"
 	"strings"
@@ -21,7 +20,7 @@ type TokenDetail struct {
 	Precision int
 }
 
-func LoadTokenInfo(account *model.Account, bar *progressbar.ProgressBar) error {
+func LoadTokenInfo(account *model.Account) error {
 
 	var tokens []model.TokenEntry
 
@@ -31,7 +30,6 @@ func LoadTokenInfo(account *model.Account, bar *progressbar.ProgressBar) error {
 	if err != nil {
 		return errors.New(fmt.Sprintf("failed to get latest block: %s", err))
 	}
-	bar.Add(1)
 
 	// Get Balances
 	balancesResponse, err := api.GetBalances(account)
@@ -39,7 +37,6 @@ func LoadTokenInfo(account *model.Account, bar *progressbar.ProgressBar) error {
 		return errors.New(fmt.Sprintf("failed to get balances: %s", err))
 	}
 
-	bar.Add(1)
 	for i := range balancesResponse.Balances {
 		balance := balancesResponse.Balances[i]
 		metadata := GetTokenMetadata(balance.Denom, *account)
@@ -69,7 +66,6 @@ func LoadTokenInfo(account *model.Account, bar *progressbar.ProgressBar) error {
 		return errors.New(fmt.Sprintf("failed to get rewards: %s", err))
 	}
 
-	bar.Add(1)
 	totalAmount := 0.0
 	for i := range rewardsResponse.Total {
 		reward := rewardsResponse.Total[i]
@@ -96,7 +92,6 @@ func LoadTokenInfo(account *model.Account, bar *progressbar.ProgressBar) error {
 		return errors.New(fmt.Sprintf("failed to get delegations: %s", err))
 	}
 
-	bar.Add(1)
 	totalAmount = 0.0
 	for i := range delegations.DelegationResponses {
 		delegation := delegations.DelegationResponses[i]
@@ -123,7 +118,6 @@ func LoadTokenInfo(account *model.Account, bar *progressbar.ProgressBar) error {
 		return errors.New(fmt.Sprintf("failed to get unbondings: %s", err))
 	}
 
-	bar.Add(1)
 	totalAmount = 0.0
 	for i := range unbondings.UnbondingResponses {
 		unbonding := unbondings.UnbondingResponses[i]
@@ -157,7 +151,6 @@ func LoadTokenInfo(account *model.Account, bar *progressbar.ProgressBar) error {
 		return errors.New("cannot retrieve validator account")
 	} else {
 		commissions, err := api.GetCommissions(account, validator)
-		bar.Add(1)
 		if err != nil {
 			return errors.New(fmt.Sprintf("Failed to get commissions: %s", err))
 		} else {
