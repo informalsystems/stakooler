@@ -7,14 +7,13 @@ import (
 	"github.com/jedib0t/go-pretty/v6/text"
 	"os"
 	"strings"
-	"time"
 )
 
 func PrintAccountDetailsTable(accounts *model.Accounts) {
 	t := table.NewWriter()
 	t.SetOutputMirror(os.Stdout)
 	t.SetTitle(strings.ToUpper("Accounts - Details"))
-	t.SetCaption(fmt.Sprintf("Fetched: %s", time.Now().Format("2006-01-02 15:04:05")))
+	t.SetCaption(fmt.Sprintf("Retrieved information for %d accounts", len(accounts.Entries)))
 	t.AppendHeader(table.Row{"Name", "Account", "Token", "Balance", "Rewards", "Staked", "Unbonding", "Commissions", "Total"})
 
 	for acctIdx := range accounts.Entries {
