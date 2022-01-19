@@ -20,34 +20,45 @@ var accountDetailsCmd = &cobra.Command{
 
 It shows tokens balance, rewards, delegation and unbonding values per account`,
 	Run: func(cmd *cobra.Command, args []string) {
+		barEnabled := !*flagCsv
 		accounts, err := config.LoadConfig()
 		if err != nil {
 			fmt.Println("errors reading configuration", err)
 			os.Exit(1)
 		}
 
-		// Progress bar
-		// iterations are the api calls number times the number of accounts
-		total_iterations := len(accounts.Entries) * 6
-		bar := progressbar.NewOptions(total_iterations,
-			progressbar.OptionEnableColorCodes(true),
-			progressbar.OptionShowBytes(false),
-			progressbar.OptionSetWidth(25),
-			progressbar.OptionUseANSICodes(false),
-			progressbar.OptionSetDescription("Getting accounts details..."),
-			progressbar.OptionClearOnFinish(),
-			progressbar.OptionSetPredictTime(false),
-			progressbar.OptionSetTheme(progressbar.Theme{
-				Saucer:        "▪︎[reset]",
-				SaucerHead:    ">[reset]",
-				SaucerPadding: ".",
-				BarStart:      "[",
-				BarEnd:        "]",
-			}))
+		var bar *progressbar.ProgressBar
+
+		if barEnabled {
+			// Progress bar
+			// iterations are the api calls number times the number of accounts
+			total_iterations := len(accounts.Entries) * 6
+			bar = progressbar.NewOptions(total_iterations,
+				progressbar.OptionEnableColorCodes(true),
+				progressbar.OptionShowBytes(false),
+				progressbar.OptionSetWidth(25),
+				progressbar.OptionUseANSICodes(false),
+				progressbar.OptionClearOnFinish(),
+				progressbar.OptionSetPredictTime(false),
+				progressbar.OptionSetTheme(progressbar.Theme{
+					Saucer:        "▪︎[reset]",
+					SaucerHead:    ">[reset]",
+					SaucerPadding: ".",
+					BarStart:      "[",
+					BarEnd:        "]",
+				}))
+		} else {
+			bar = progressbar.New(0)
+		}
 
 		// Load each account details
 		for _, acct := range accounts.Entries {
-			bar.Describe(fmt.Sprintf("Getting account %s details", acct.Address))
+
+			// Don't show this if csv option enabled
+			if barEnabled {
+				bar.Describe(fmt.Sprintf("Getting account %s details", acct.Address))
+			}
+
 			err := querier.LoadTokenInfo(acct, bar)
 			if err != nil {
 				fmt.Println("failed to retrieved", acct.Address, "details:", err)
