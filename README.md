@@ -2,6 +2,12 @@
 
 The koolest (light) tool for stakers !
 
+### Installation
+
+* Install a recent version of [Golang installed on the machine](https://go.dev/doc/install)
+* Clone this repository
+* Build the tool with `go build`
+
 ### Configuration
 
 stakooler needs a configuration file in order to run.

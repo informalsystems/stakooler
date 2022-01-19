@@ -198,11 +198,11 @@ func GetTokenMetadata(denom string, account model.Account) TokenDetail {
 	// Check the chain and bech32Prefix and if matches one of the chains that have a registry or asset list
 	// use that information to find the token metadata
 	// TODO: In the future use the information from the chain registry instead of hard-coded values
-	if strings.ToLower(account.Chain.ID) == "osmosis-1" && strings.ToLower(bech32Prefix) == "osmo" {
+	if strings.ToLower(bech32Prefix) == "osmo" {
 		// TODO: Don't fetch this for every account
 		list, _ := osmosis.GetAssetsList()
 		symbol, precision = list.GetSymbolExponent(denom)
-	} else if strings.ToLower(account.Chain.ID) == "sifchain-1" && strings.ToLower(bech32Prefix) == "sif" {
+	} else if strings.ToLower(bech32Prefix) == "sif" {
 		// TODO: Don't fetch this for every account
 		tokenList, _ := sifchain.GetTokenList()
 		symbol, precision = tokenList.GetSymbolExponent(denom)
