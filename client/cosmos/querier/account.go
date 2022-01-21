@@ -214,8 +214,15 @@ func GetTokenMetadata(denom string, account model.Account) TokenDetail {
 		//	denomM
 		//}
 		denomMetadata, _ := api.GetDenomMetadata(&account, denom)
-		symbol = denomMetadata.Metadata.Display
-		precision = denomMetadata.GetExponent()
+		// In case no denom metadata is available just use the denom - 'u' and precision 6
+		if denomMetadata.Metadata.Base == "" {
+			symbol = strings.ToUpper(denom[1:])
+			precision = 6
+		} else {
+			symbol = denomMetadata.Metadata.Display
+			precision = denomMetadata.GetExponent()
+		}
+
 	}
 
 	// If it's an IBC denom add '(IBC)' to the symbol

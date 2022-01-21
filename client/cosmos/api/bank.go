@@ -96,6 +96,7 @@ func GetDenomMetadata(account *model.Account, denom string) (DenomMetadataRespon
 		fmt.Println(err)
 		return denomMetadata, err
 	}
+
 	return denomMetadata, nil
 }
 
