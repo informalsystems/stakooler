@@ -15,7 +15,7 @@ func WriteCSV(accounts *model.Accounts) {
 	w := csv.NewWriter(os.Stdout)
 	defer w.Flush()
 
-	header := []string{"account_name", "account_address", "chain_id", "block_height", "block_time", "token", "denom", "balance", "rewards", "staked", "unbonding", "commissions", "total"}
+	header := []string{"account_name", "account_address", "chain_id", "block_height", "block_time", "token", "balance", "rewards", "staked", "unbonding", "commissions", "total"}
 	if err := w.Write(header); err != nil {
 		log.Fatalln("error writing record to file", err)
 	}
@@ -30,7 +30,6 @@ func WriteCSV(accounts *model.Accounts) {
 				accounts.Entries[acctIdx].TokensEntry[i].BlockHeight,
 				accounts.Entries[acctIdx].TokensEntry[i].BlockTime.Format(time.RFC3339Nano),
 				accounts.Entries[acctIdx].TokensEntry[i].DisplayName,
-				accounts.Entries[acctIdx].TokensEntry[i].Denom,
 				fmt.Sprintf("%f", accounts.Entries[acctIdx].TokensEntry[i].Balance),
 				fmt.Sprintf("%f", accounts.Entries[acctIdx].TokensEntry[i].Reward),
 				fmt.Sprintf("%f", accounts.Entries[acctIdx].TokensEntry[i].Delegation),

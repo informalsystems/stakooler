@@ -41,20 +41,22 @@ func LoadTokenInfo(account *model.Account, bar *progressbar.ProgressBar) error {
 
 	bar.Add(1)
 	for i := range balancesResponse.Balances {
+		// Skip liquidity pools and IBC tokens
 		balance := balancesResponse.Balances[i]
-		metadata := GetTokenMetadata(balance.Denom, *account)
-		token := model.TokenEntry{}
-		token.DisplayName = metadata.Symbol
-		token.Denom = balance.Denom
-		token.BlockTime = blockResponse.Block.Header.Time
-		token.BlockHeight = blockResponse.Block.Header.Height
-		amount, err := strconv.ParseFloat(balance.Amount, 1)
-		if err != nil {
-			return errors.New(fmt.Sprintf("error converting balance amount: %s", err))
-		} else {
-			if amount > zeroAmount {
-				// Skip liquidity pools
-				if !strings.HasPrefix(strings.ToUpper(metadata.Symbol), "GAMM/POOL/") {
+		if !strings.HasPrefix(strings.ToUpper(balance.Denom), "GAMM/POOL/") &&
+			!strings.HasPrefix(strings.ToUpper(balance.Denom), "IBC/") {
+
+			metadata := GetTokenMetadata(balance.Denom, *account)
+			token := model.TokenEntry{}
+			token.DisplayName = metadata.Symbol
+			token.Denom = balance.Denom
+			token.BlockTime = blockResponse.Block.Header.Time
+			token.BlockHeight = blockResponse.Block.Header.Height
+			amount, err := strconv.ParseFloat(balance.Amount, 1)
+			if err != nil {
+				return errors.New(fmt.Sprintf("error converting balance amount: %s", err))
+			} else {
+				if amount > zeroAmount {
 					convertedAmount := amount / math.Pow10(metadata.Precision)
 					token.Balance = convertedAmount
 					tokens = append(tokens, token)
@@ -208,6 +210,9 @@ func GetTokenMetadata(denom string, account model.Account) TokenDetail {
 		symbol, precision = tokenList.GetSymbolExponent(denom)
 	} else {
 		// Try to get the denometadata from the chain
+		//if strings.Contains(denom, "ibc/") {
+		//	denomM
+		//}
 		denomMetadata, _ := api.GetDenomMetadata(&account, denom)
 		symbol = denomMetadata.Metadata.Display
 		precision = denomMetadata.GetExponent()
