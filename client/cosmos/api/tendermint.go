@@ -2,7 +2,6 @@ package api
 
 import (
 	"encoding/json"
-	"fmt"
 	"github.com/informalsystems/stakooler/client/cosmos/model"
 	"io/ioutil"
 	"net/http"
@@ -198,24 +197,20 @@ func GetLatestBlock(account *model.Account) (BlockResponse, error) {
 	req, err := http.NewRequest(method, url, nil)
 
 	if err != nil {
-		fmt.Println(err)
 		return response, err
 	}
 	res, err := client.Do(req)
 	if err != nil {
-		fmt.Println(err)
 		return response, err
 	}
 	defer res.Body.Close()
 
 	body, err := ioutil.ReadAll(res.Body)
 	if err != nil {
-		fmt.Println(err)
 		return response, err
 	}
 	err = json.Unmarshal(body, &response)
 	if err != nil {
-		fmt.Println(err)
 		return response, err
 	}
 	return response, nil

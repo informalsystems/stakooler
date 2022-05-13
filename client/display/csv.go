@@ -21,24 +21,36 @@ func WriteCSV(accounts *model.Accounts) {
 	}
 	for acctIdx := range accounts.Entries {
 		entries := accounts.Entries[acctIdx].TokensEntry
-		for i := range accounts.Entries[acctIdx].TokensEntry {
-			total := entries[i].Balance + entries[i].Reward + entries[i].Delegation + entries[i].Unbonding + entries[i].Commission
+
+		// In case there is no token information
+		if len(entries) == 0 {
 			record := []string{
-				accounts.Entries[acctIdx].Name,
-				accounts.Entries[acctIdx].Address,
-				accounts.Entries[acctIdx].Chain.ID,
-				accounts.Entries[acctIdx].TokensEntry[i].BlockHeight,
-				accounts.Entries[acctIdx].TokensEntry[i].BlockTime.Format(time.RFC3339Nano),
-				accounts.Entries[acctIdx].TokensEntry[i].DisplayName,
-				fmt.Sprintf("%f", accounts.Entries[acctIdx].TokensEntry[i].Balance),
-				fmt.Sprintf("%f", accounts.Entries[acctIdx].TokensEntry[i].Reward),
-				fmt.Sprintf("%f", accounts.Entries[acctIdx].TokensEntry[i].Delegation),
-				fmt.Sprintf("%f", accounts.Entries[acctIdx].TokensEntry[i].Unbonding),
-				fmt.Sprintf("%f", accounts.Entries[acctIdx].TokensEntry[i].Commission),
-				fmt.Sprintf("%f", total),
+				accounts.Entries[acctIdx].Name, accounts.Entries[acctIdx].Address, "na", "na", "na", "na", "na", "na",
+				"na", "na", "na", "na",
 			}
 			if err := w.Write(record); err != nil {
 				log.Fatalln("error writing record", err)
+			}
+		} else {
+			for i := range accounts.Entries[acctIdx].TokensEntry {
+				total := entries[i].Balance + entries[i].Reward + entries[i].Delegation + entries[i].Unbonding + entries[i].Commission
+				record := []string{
+					accounts.Entries[acctIdx].Name,
+					accounts.Entries[acctIdx].Address,
+					accounts.Entries[acctIdx].Chain.ID,
+					accounts.Entries[acctIdx].TokensEntry[i].BlockHeight,
+					accounts.Entries[acctIdx].TokensEntry[i].BlockTime.Format(time.RFC3339Nano),
+					accounts.Entries[acctIdx].TokensEntry[i].DisplayName,
+					fmt.Sprintf("%f", accounts.Entries[acctIdx].TokensEntry[i].Balance),
+					fmt.Sprintf("%f", accounts.Entries[acctIdx].TokensEntry[i].Reward),
+					fmt.Sprintf("%f", accounts.Entries[acctIdx].TokensEntry[i].Delegation),
+					fmt.Sprintf("%f", accounts.Entries[acctIdx].TokensEntry[i].Unbonding),
+					fmt.Sprintf("%f", accounts.Entries[acctIdx].TokensEntry[i].Commission),
+					fmt.Sprintf("%f", total),
+				}
+				if err := w.Write(record); err != nil {
+					log.Fatalln("error writing record", err)
+				}
 			}
 		}
 	}

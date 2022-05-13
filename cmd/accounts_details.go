@@ -61,8 +61,13 @@ It shows tokens balance, rewards, delegation and unbonding values per account`,
 
 			err := querier.LoadTokenInfo(acct, bar)
 			if err != nil {
-				fmt.Println("failed to retrieved", acct.Address, "details:", err)
-				os.Exit(1)
+				bar.Describe(fmt.Sprintf("failed to retrieve %s details: %s", acct.Address, err))
+				//os.Exit(1)
+			} else {
+				// Don't show this if csv option enabled
+				if barEnabled {
+					bar.Describe(fmt.Sprintf("Got account %s details", acct.Address))
+				}
 			}
 		}
 
