@@ -9,19 +9,20 @@ import (
 )
 
 type AccountConfig struct {
-	Name	string
-	Address	string
-	Chain	string
+	Name    string
+	Address string
+	Chain   string
 }
 
 type ChainConfig struct {
-	ID	string
-	LCD	string
+	ID        string
+	LCD       string
+	CoinGecko string
 }
 
 type Config struct {
-	Accounts	[]AccountConfig
-	Chains		[]ChainConfig
+	Accounts []AccountConfig
+	Chains   []ChainConfig
 }
 
 func LoadConfig() (model.Accounts, error) {

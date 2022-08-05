@@ -4,17 +4,18 @@ import (
 	"errors"
 	"fmt"
 	"github.com/cosmos/cosmos-sdk/types/bech32"
+	coingecko "github.com/informalsystems/stakooler/client/coingecko/api"
 	"github.com/informalsystems/stakooler/client/cosmos/api"
 	"github.com/informalsystems/stakooler/client/cosmos/api/osmosis"
 	"github.com/informalsystems/stakooler/client/cosmos/api/sifchain"
 	"github.com/informalsystems/stakooler/client/cosmos/model"
+	registry "github.com/informalsystems/stakooler/client/registry/api"
+	"github.com/informalsystems/stakooler/utils"
 	"github.com/schollz/progressbar/v3"
 	"math"
 	"strconv"
 	"strings"
 )
-
-const zeroAmount = 0.00000
 
 type TokenDetail struct {
 	Symbol    string
@@ -25,7 +26,7 @@ func LoadTokenInfo(account *model.Account, bar *progressbar.ProgressBar) error {
 
 	var tokens []model.TokenEntry
 
-	// Get Latest Block Information
+	// Get the latest Block Information
 	// Use the same block information for all the entries
 	blockResponse, err := api.GetLatestBlock(account)
 	if err != nil {
@@ -47,16 +48,23 @@ func LoadTokenInfo(account *model.Account, bar *progressbar.ProgressBar) error {
 			!strings.HasPrefix(strings.ToUpper(balance.Denom), "IBC/") {
 
 			metadata := GetTokenMetadata(balance.Denom, *account)
+			assets, err := registry.GetAssetsList(account)
+			// Get Coingecko Price if available
+			price, err := coingecko.GetTokenPrice(assets.GetCoingeckoID(balance.Denom))
+			if err != nil {
+				return errors.New(fmt.Sprintf("failed to get token price from coingecko: %s", err))
+			}
 			token := model.TokenEntry{}
 			token.DisplayName = metadata.Symbol
 			token.Denom = balance.Denom
 			token.BlockTime = blockResponse.Block.Header.Time
 			token.BlockHeight = blockResponse.Block.Header.Height
+			token.Price = price
 			amount, err := strconv.ParseFloat(balance.Amount, 1)
 			if err != nil {
 				return errors.New(fmt.Sprintf("error converting balance amount: %s", err))
 			} else {
-				if amount > zeroAmount {
+				if amount > utils.ZEROAMOUNT {
 					convertedAmount := amount / math.Pow10(metadata.Precision)
 					token.Balance = convertedAmount
 					tokens = append(tokens, token)
@@ -80,7 +88,7 @@ func LoadTokenInfo(account *model.Account, bar *progressbar.ProgressBar) error {
 		if err != nil {
 			return errors.New(fmt.Sprintf("error converting rewards amount: %s", err))
 		} else {
-			if amount > zeroAmount {
+			if amount > utils.ZEROAMOUNT {
 				convertedAmount := amount / math.Pow10(metadata.Precision)
 				totalAmount += convertedAmount
 				for i := range tokens {
@@ -107,7 +115,7 @@ func LoadTokenInfo(account *model.Account, bar *progressbar.ProgressBar) error {
 		if err != nil {
 			return errors.New(fmt.Sprintf("error converting delegation amount: %s", err))
 		} else {
-			if amount > zeroAmount {
+			if amount > utils.ZEROAMOUNT {
 				convertedAmount := amount / math.Pow10(metadata.Precision)
 				totalAmount += convertedAmount
 				for i := range tokens {
@@ -139,7 +147,7 @@ func LoadTokenInfo(account *model.Account, bar *progressbar.ProgressBar) error {
 			if err != nil {
 				return errors.New(fmt.Sprintf("error converting unbonding amount: %s", err))
 			} else {
-				if amount > zeroAmount {
+				if amount > utils.ZEROAMOUNT {
 					convertedAmount := amount / math.Pow10(metadata.Precision)
 					totalAmount += convertedAmount
 					for i := range tokens {
@@ -170,7 +178,7 @@ func LoadTokenInfo(account *model.Account, bar *progressbar.ProgressBar) error {
 				if err != nil {
 					return errors.New(fmt.Sprintf("error converting commission amount: %s", err))
 				} else {
-					if amount > zeroAmount {
+					if amount > utils.ZEROAMOUNT {
 						convertedAmount := amount / math.Pow10(metadata.Precision)
 						totalAmount += convertedAmount
 						for i := range tokens {
@@ -187,7 +195,7 @@ func LoadTokenInfo(account *model.Account, bar *progressbar.ProgressBar) error {
 	return nil
 }
 
-// This function checks if the denom is for a chain (e.g. Osmosis or Sifchain)
+// GetTokenMetadata This function checks if the denom is for a chain (e.g. Osmosis or Sifchain)
 // that keeps an asset list or registry for their denominations for the IBC denoms
 // or the liquitiy pools. The function returns the UI friendly name and the exponent
 // used by the denom. If there are any errors just return the denom and 0 for

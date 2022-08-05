@@ -1,15 +1,16 @@
-package osmosis
+package api
 
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/informalsystems/stakooler/client/cosmos/model"
 	"io/ioutil"
 	"net/http"
 	"strings"
 )
 
-// Assets List metadata used by Osmosis for coin denominations
-type OsmosisAssetsList struct {
+// AssetsList Assets List metadata
+type AssetsList struct {
 	ChainID string `json:"chain_id"`
 	Assets  []struct {
 		Description string `json:"description,omitempty"`
@@ -35,11 +36,11 @@ type OsmosisAssetsList struct {
 	} `json:"assets"`
 }
 
-// Get Assets List metadata hosted in Github and it is used by Osmosis
-func GetAssetsList() (OsmosisAssetsList, error) {
+// GetAssetsList Get Assets List metadata hosted in Github
+func GetAssetsList(account *model.Account) (AssetsList, error) {
 
-	assetsList := OsmosisAssetsList{}
-	url := "https://raw.githubusercontent.com/osmosis-labs/assetlists/main/osmosis-1/osmosis-1.assetlist.json"
+	assetsList := AssetsList{}
+	url := "https://raw.githubusercontent.com/cosmos/chain-registry/master/" + account.Chain.ID + "/assetlist.json"
 	method := "GET"
 
 	client := &http.Client{}
@@ -69,17 +70,17 @@ func GetAssetsList() (OsmosisAssetsList, error) {
 	return assetsList, nil
 }
 
-// Searches for the symbol for a particular denom in the assets list
-// Returns the symbol and exponent
-func (a *OsmosisAssetsList) GetSymbolExponent(denom string) (string, int) {
+// GetCoingeckoID Searches for the symbol for a particular denom in the assets list
+// Returns the coingecko_id
+func (a *AssetsList) GetCoingeckoID(denom string) string {
 	for i := range a.Assets {
 		if strings.ToUpper(a.Assets[i].Base) == strings.ToUpper(denom) {
 			for j := range a.Assets[i].DenomUnits {
 				if strings.ToUpper(a.Assets[i].DenomUnits[j].Denom) == strings.ToUpper(a.Assets[i].Display) {
-					return a.Assets[i].Symbol, a.Assets[i].DenomUnits[j].Exponent
+					return a.Assets[i].CoingeckoID
 				}
 			}
 		}
 	}
-	return denom, 0
+	return ""
 }

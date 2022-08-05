@@ -3,6 +3,7 @@ package display
 import (
 	"fmt"
 	"github.com/informalsystems/stakooler/client/cosmos/model"
+	"github.com/informalsystems/stakooler/utils"
 	"github.com/jedib0t/go-pretty/v6/table"
 	"github.com/jedib0t/go-pretty/v6/text"
 	"os"
@@ -14,7 +15,7 @@ func PrintAccountDetailsTable(accounts *model.Accounts) {
 	t.SetOutputMirror(os.Stdout)
 	t.SetTitle(strings.ToUpper("Accounts - Details"))
 	t.SetCaption(fmt.Sprintf("Retrieved information for %d accounts", len(accounts.Entries)))
-	t.AppendHeader(table.Row{"Name", "Account", "Token", "Balance", "Rewards", "Staked", "Unbonding", "Commissions", "Total"})
+	t.AppendHeader(table.Row{"Name", "Account", "Token", "Price (USD)", "Balance", "Rewards", "Staked", "Un-bonding", "Commissions", "Total (Tokens)", "Total (USD)"})
 
 	for acctIdx := range accounts.Entries {
 		entries := accounts.Entries[acctIdx].TokensEntry
@@ -22,29 +23,34 @@ func PrintAccountDetailsTable(accounts *model.Accounts) {
 
 		for i := range accounts.Entries[acctIdx].TokensEntry {
 			total := entries[i].Balance + entries[i].Reward + entries[i].Delegation + entries[i].Unbonding + entries[i].Commission
+			total_price := total * accounts.Entries[acctIdx].TokensEntry[i].Price
 			if i == 0 {
 				t.AppendRow([]interface{}{
 					accounts.Entries[acctIdx].Name,
 					accounts.Entries[acctIdx].Address,
 					accounts.Entries[acctIdx].TokensEntry[i].DisplayName,
+					FilterZeroValue(accounts.Entries[acctIdx].TokensEntry[i].Price),
 					FilterZeroValue(accounts.Entries[acctIdx].TokensEntry[i].Balance),
 					FilterZeroValue(accounts.Entries[acctIdx].TokensEntry[i].Reward),
 					FilterZeroValue(accounts.Entries[acctIdx].TokensEntry[i].Delegation),
 					FilterZeroValue(accounts.Entries[acctIdx].TokensEntry[i].Unbonding),
 					FilterZeroValue(accounts.Entries[acctIdx].TokensEntry[i].Commission),
 					FilterZeroValue(total),
+					FilterZeroValue(total_price),
 				})
 			} else {
 				t.AppendRow([]interface{}{
 					"",
 					"",
 					accounts.Entries[acctIdx].TokensEntry[i].DisplayName,
+					FilterZeroValue(accounts.Entries[acctIdx].TokensEntry[i].Price),
 					FilterZeroValue(accounts.Entries[acctIdx].TokensEntry[i].Balance),
 					FilterZeroValue(accounts.Entries[acctIdx].TokensEntry[i].Reward),
 					FilterZeroValue(accounts.Entries[acctIdx].TokensEntry[i].Delegation),
 					FilterZeroValue(accounts.Entries[acctIdx].TokensEntry[i].Unbonding),
 					FilterZeroValue(accounts.Entries[acctIdx].TokensEntry[i].Commission),
 					FilterZeroValue(total),
+					FilterZeroValue(total_price),
 				})
 			}
 
@@ -56,6 +62,7 @@ func PrintAccountDetailsTable(accounts *model.Accounts) {
 		{Name: "Name", Align: text.AlignLeft, AlignHeader: text.AlignCenter},
 		{Name: "Account", Align: text.AlignLeft, AlignHeader: text.AlignCenter},
 		{Name: "Token", Align: text.AlignLeft, AlignHeader: text.AlignCenter},
+		{Name: "Price (USD)", Align: text.AlignLeft, AlignHeader: text.AlignCenter},
 		{Name: "Balance", Align: text.AlignRight, AlignHeader: text.AlignCenter},
 		{Name: "Rewards", Align: text.AlignRight, AlignHeader: text.AlignCenter},
 		{Name: "Staked", Align: text.AlignRight, AlignHeader: text.AlignCenter},
@@ -68,7 +75,7 @@ func PrintAccountDetailsTable(accounts *model.Accounts) {
 }
 
 func FilterZeroValue(value float64) string {
-	if value > 0.00000 {
+	if value > utils.ZEROAMOUNT {
 		return fmt.Sprintf("%f", value)
 	} else {
 		return ""

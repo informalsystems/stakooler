@@ -23,4 +23,5 @@ type TokenEntry struct {
 	Delegation  float64
 	Unbonding   float64
 	Commission  float64
+	Price       float64
 }
