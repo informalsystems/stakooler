@@ -15,7 +15,7 @@ func WriteCSV(accounts *model.Accounts) {
 	w := csv.NewWriter(os.Stdout)
 	defer w.Flush()
 
-	header := []string{"account_name", "account_address", "chain_id", "block_height", "block_time", "token", "token_usd_price", "balance", "rewards", "staked", "unbonding", "commissions", "total"}
+	header := []string{"account_name", "account_address", "chain_id", "block_height", "block_time", "token", "token_usd", "balance", "rewards", "staked", "unbonding", "commissions", "total", "total_usd"}
 	if err := w.Write(header); err != nil {
 		log.Fatalln("error writing record to file", err)
 	}
@@ -33,7 +33,6 @@ func WriteCSV(accounts *model.Accounts) {
 			}
 		} else {
 			for i := range accounts.Entries[acctIdx].TokensEntry {
-				total := entries[i].Balance + entries[i].Reward + entries[i].Delegation + entries[i].Unbonding + entries[i].Commission
 				record := []string{
 					accounts.Entries[acctIdx].Name,
 					accounts.Entries[acctIdx].Address,
@@ -47,7 +46,8 @@ func WriteCSV(accounts *model.Accounts) {
 					fmt.Sprintf("%f", accounts.Entries[acctIdx].TokensEntry[i].Delegation),
 					fmt.Sprintf("%f", accounts.Entries[acctIdx].TokensEntry[i].Unbonding),
 					fmt.Sprintf("%f", accounts.Entries[acctIdx].TokensEntry[i].Commission),
-					fmt.Sprintf("%f", total),
+					fmt.Sprintf("%f", accounts.Entries[acctIdx].TokensEntry[i].Total),
+					fmt.Sprintf("%f", accounts.Entries[acctIdx].TokensEntry[i].TotalPrice),
 				}
 				if err := w.Write(record); err != nil {
 					log.Fatalln("error writing record", err)

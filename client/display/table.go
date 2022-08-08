@@ -15,15 +15,10 @@ func PrintAccountDetailsTable(accounts *model.Accounts) {
 	t.SetOutputMirror(os.Stdout)
 	t.SetTitle(strings.ToUpper("Accounts - Details"))
 	t.SetCaption(fmt.Sprintf("Retrieved information for %d accounts", len(accounts.Entries)))
-	t.AppendHeader(table.Row{"Name", "Account", "Token", "Price (USD)", "Balance", "Rewards", "Staked", "Un-bonding", "Commissions", "Total (Tokens)", "Total (USD)"})
+	t.AppendHeader(table.Row{"Name", "Account", "Token", "Price (USD)", "Balance", "Rewards", "Staked", "Un-bonding", "Commissions", "Total", "Total (USD)"})
 
 	for acctIdx := range accounts.Entries {
-		entries := accounts.Entries[acctIdx].TokensEntry
-		// To store the keys in slice in sorted order
-
 		for i := range accounts.Entries[acctIdx].TokensEntry {
-			total := entries[i].Balance + entries[i].Reward + entries[i].Delegation + entries[i].Unbonding + entries[i].Commission
-			total_price := total * accounts.Entries[acctIdx].TokensEntry[i].Price
 			if i == 0 {
 				t.AppendRow([]interface{}{
 					accounts.Entries[acctIdx].Name,
@@ -35,8 +30,8 @@ func PrintAccountDetailsTable(accounts *model.Accounts) {
 					FilterZeroValue(accounts.Entries[acctIdx].TokensEntry[i].Delegation),
 					FilterZeroValue(accounts.Entries[acctIdx].TokensEntry[i].Unbonding),
 					FilterZeroValue(accounts.Entries[acctIdx].TokensEntry[i].Commission),
-					FilterZeroValue(total),
-					FilterZeroValue(total_price),
+					FilterZeroValue(accounts.Entries[acctIdx].TokensEntry[i].Total),
+					FilterZeroValue(accounts.Entries[acctIdx].TokensEntry[i].TotalPrice),
 				})
 			} else {
 				t.AppendRow([]interface{}{
@@ -49,11 +44,10 @@ func PrintAccountDetailsTable(accounts *model.Accounts) {
 					FilterZeroValue(accounts.Entries[acctIdx].TokensEntry[i].Delegation),
 					FilterZeroValue(accounts.Entries[acctIdx].TokensEntry[i].Unbonding),
 					FilterZeroValue(accounts.Entries[acctIdx].TokensEntry[i].Commission),
-					FilterZeroValue(total),
-					FilterZeroValue(total_price),
+					FilterZeroValue(accounts.Entries[acctIdx].TokensEntry[i].Total),
+					FilterZeroValue(accounts.Entries[acctIdx].TokensEntry[i].TotalPrice),
 				})
 			}
-
 		}
 		t.AppendSeparator()
 	}
@@ -69,6 +63,7 @@ func PrintAccountDetailsTable(accounts *model.Accounts) {
 		{Name: "Unbonding", Align: text.AlignRight, AlignHeader: text.AlignCenter},
 		{Name: "Commissions", Align: text.AlignRight, AlignHeader: text.AlignCenter},
 		{Name: "Total", Align: text.AlignRight, AlignHeader: text.AlignCenter},
+		{Name: "Total (USD)", Align: text.AlignRight, AlignHeader: text.AlignCenter},
 	})
 	t.Render()
 	return

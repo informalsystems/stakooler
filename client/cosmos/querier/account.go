@@ -191,6 +191,13 @@ func LoadTokenInfo(account *model.Account, bar *progressbar.ProgressBar) error {
 			}
 		}
 	}
+
+	// Calculate totals
+	for i := range tokens {
+		tokens[i].Total = tokens[i].Balance + tokens[i].Reward + tokens[i].Delegation + tokens[i].Unbonding + tokens[i].Commission
+		tokens[i].TotalPrice = tokens[i].Total * tokens[i].Price
+	}
+
 	account.TokensEntry = tokens
 	return nil
 }

@@ -24,4 +24,6 @@ type TokenEntry struct {
 	Unbonding   float64
 	Commission  float64
 	Price       float64
+	Total       float64
+	TotalPrice  float64
 }
