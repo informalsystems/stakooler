@@ -5,42 +5,59 @@ import (
 	"fmt"
 	"github.com/informalsystems/stakooler/client/cosmos/model"
 	"github.com/spf13/viper"
+	"path/filepath"
+	"reflect"
 	"strings"
 )
 
 type AccountConfig struct {
-	Name	string
-	Address	string
-	Chain	string
+	Name    string
+	Address string
+	Chain   string
 }
 
 type ChainConfig struct {
-	ID	string
-	LCD	string
+	ID  string
+	LCD string
 }
 
 type Config struct {
-	Accounts	[]AccountConfig
-	Chains		[]ChainConfig
+	Accounts []AccountConfig
+	Chains   []ChainConfig
 }
 
-func LoadConfig() (model.Accounts, error) {
-	viper.SetConfigName("config") // name of config file (without extension)
-	viper.SetConfigType("toml")
-	viper.AddConfigPath("$HOME/.stakooler") // call multiple times to add many search paths
-	viper.AddConfigPath(".")
+func LoadConfig(configPath string) (model.Accounts, error) {
+
+	if configPath != "" {
+		p := filepath.Join(configPath)
+		filename := filepath.Base(p)
+		ext := filepath.Ext(filename)
+		configName := strings.TrimSuffix(filename, ext)
+		path := filepath.Dir(p)
+		viper.SetConfigName(configName)
+		viper.SetConfigType(strings.Replace(ext, ".", "", 1))
+		viper.AddConfigPath(path)
+	} else {
+		viper.SetConfigName("config") // name of config file (without extension)
+		viper.SetConfigType("toml")
+		viper.AddConfigPath("$HOME/.stakooler") // call multiple times to add many search paths
+		viper.AddConfigPath(".")
+	}
 
 	accounts := model.Accounts{}
 	chains := model.Chains{}
 
 	err := viper.ReadInConfig() // Find and read the config file
-	if err != nil {             // Handle errors reading the config file
-		if errors.Is(err, err.(viper.ConfigFileNotFoundError)) {
-			if err != nil {
-				return accounts, errors.New("no configuration found")
+
+	if err != nil { // Handle errors reading the config file
+		if reflect.TypeOf(err).Kind() == reflect.TypeOf(viper.ConfigFileNotFoundError{}).Kind() {
+			if configPath != "" {
+				return accounts, errors.New("no configuration found at " + configPath)
+			} else {
+				return accounts, errors.New("cannot find config.toml in default locations ($HOME/.stakooler) or (current directory)")
 			}
 		} else {
-			return accounts, errors.New(fmt.Sprintf("error loading configuration file: %s", err))
+			return accounts, errors.New(fmt.Sprintf("%s", err))
 		}
 	} else {
 		var config Config

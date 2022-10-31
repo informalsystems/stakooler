@@ -1,6 +1,5 @@
 /*
 Copyright © 2021 NAME HERE <EMAIL ADDRESS>
-
 */
 package cmd
 
@@ -11,11 +10,8 @@ import (
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
 	Use:   "stakooler",
-	Short: "Stakooler is a helpful utility for Cosmos delegators",
-	Long: `Stakooler is a utility that allows delegators to retrieve information about 
-configured Cosmos chains accounts. 
-
-The tool allows the information retrieval for all configured accounts with one command.`,
+	Short: "Stakooler is a helpful utility for Cosmos delegators and validators",
+	Long:  `Stakooler helps delegators and validators retrieve information from Cosmos based chains in a friendly and useful manner.`,
 }
 
 // Execute adds all child commands to the root command and sets flags appropriately.
@@ -33,6 +29,9 @@ func init() {
 		DisableDescriptions: true,
 	}
 	rootCmd.CompletionOptions = options
+
+	// Add flags
+	addGlobalFlags(rootCmd)
 }
 
 func initConfig() {
