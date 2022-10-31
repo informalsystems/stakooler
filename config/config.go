@@ -6,6 +6,7 @@ import (
 	"github.com/informalsystems/stakooler/client/cosmos/model"
 	"github.com/spf13/viper"
 	"path/filepath"
+	"reflect"
 	"strings"
 )
 
@@ -29,8 +30,6 @@ func LoadConfig(configPath string) (model.Accounts, error) {
 
 	if configPath != "" {
 		p := filepath.Join(configPath)
-		fmt.Println("p:", p)
-		fmt.Println("Dir(p):", filepath.Dir(p))
 		filename := filepath.Base(p)
 		ext := filepath.Ext(filename)
 		configName := strings.TrimSuffix(filename, ext)
@@ -49,19 +48,16 @@ func LoadConfig(configPath string) (model.Accounts, error) {
 	chains := model.Chains{}
 
 	err := viper.ReadInConfig() // Find and read the config file
-	if err != nil {             // Handle errors reading the config file
-		if errors.Is(err, err.(viper.ConfigFileNotFoundError)) {
-			if err != nil {
-				if configPath != "" {
-					viper.AddConfigPath(configPath)
-					return accounts, errors.New("no configuration found at " + configPath)
-				} else {
-					return accounts, errors.New("no configuration found in default locations ($HOME/.stakooler) or (current directory)")
-				}
 
+	if err != nil { // Handle errors reading the config file
+		if reflect.TypeOf(err).Kind() == reflect.TypeOf(viper.ConfigFileNotFoundError{}).Kind() {
+			if configPath != "" {
+				return accounts, errors.New("no configuration found at " + configPath)
+			} else {
+				return accounts, errors.New("cannot find config.toml in default locations ($HOME/.stakooler) or (current directory)")
 			}
 		} else {
-			return accounts, errors.New(fmt.Sprintf("error loading configuration file: %s", err))
+			return accounts, errors.New(fmt.Sprintf("%s", err))
 		}
 	} else {
 		var config Config
