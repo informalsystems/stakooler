@@ -33,6 +33,9 @@ func init() {
 		DisableDescriptions: true,
 	}
 	rootCmd.CompletionOptions = options
+
+	// Add flags
+	addGlobalFlags(rootCmd)
 }
 
 func initConfig() {

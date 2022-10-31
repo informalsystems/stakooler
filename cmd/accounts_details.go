@@ -21,9 +21,9 @@ var accountDetailsCmd = &cobra.Command{
 It shows tokens balance, rewards, delegation and unbonding values per account`,
 	Run: func(cmd *cobra.Command, args []string) {
 		barEnabled := !*flagCsv
-		accounts, err := config.LoadConfig()
+		accounts, err := config.LoadConfig(flagConfigPath)
 		if err != nil {
-			fmt.Println("errors reading configuration", err)
+			fmt.Println("error reading configuration file:", err)
 			os.Exit(1)
 		}
 

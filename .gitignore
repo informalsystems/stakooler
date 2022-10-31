@@ -1,4 +1,4 @@
 .idea
 stakooler
-config.toml
+config*.toml
 *.csv
