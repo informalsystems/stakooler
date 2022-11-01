@@ -10,15 +10,13 @@ import (
 	"os"
 )
 
-var flagCsv *bool
-
 // represents the 'accounts details' command
-var accountDetailsCmd = &cobra.Command{
-	Use:   "details",
-	Short: "Shows detailed information about accounts",
-	Long: `This command shows detailed information about configured accounts. For example:
+var validatorStatsCmd = &cobra.Command{
+	Use:   "stats",
+	Short: "Shows detailed information about a validator statistics",
+	Long: `This command shows detailed information about a validator statistics. For example:
 
-It shows tokens balance, rewards, delegation and unbonding values per account`,
+It shows the validator's voting power, voting power percentage, ranking, number of delegators per chain`,
 	Run: func(cmd *cobra.Command, args []string) {
 		barEnabled := !*flagCsv
 		config, err := config.LoadConfig(flagConfigPath)
@@ -86,6 +84,6 @@ It shows tokens balance, rewards, delegation and unbonding values per account`,
 }
 
 func init() {
-	flagCsv = accountDetailsCmd.Flags().BoolP("csv", "c", false, "output the result to a csv format")
-	accountsCmd.AddCommand(accountDetailsCmd)
+	flagCsv = validatorStatsCmd.Flags().BoolP("csv", "c", false, "output the result to a csv format")
+	validatorCmd.AddCommand(validatorStatsCmd)
 }
