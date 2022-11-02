@@ -7,10 +7,10 @@ type Validators struct {
 }
 
 type Validator struct {
-	Name       string
-	Address    string
-	Chain      []Chain
-	Statistics []Statistic
+	Name           string
+	ValoperAddress string
+	Chain          Chain
+	Statistics     []Statistic
 }
 
 type Statistic struct {

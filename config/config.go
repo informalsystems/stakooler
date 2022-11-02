@@ -3,6 +3,7 @@ package config
 import (
 	"errors"
 	"fmt"
+	_ "github.com/cosmos/cosmos-sdk/types/bech32"
 	"github.com/informalsystems/stakooler/client/cosmos/model"
 	"github.com/spf13/viper"
 	"path/filepath"
@@ -18,8 +19,8 @@ type AccountConfig struct {
 
 type ValidatorsConfig struct {
 	Name    string
-	Address string
-	Chains  []string
+	Valoper string
+	Chain   string
 }
 
 type ChainConfig struct {
@@ -75,6 +76,7 @@ func LoadConfig(configPath string) (model.Config, error) {
 			return config, errors.New(fmt.Sprintf("can not decode configuration: %s", err))
 		}
 
+		// Iterate through chains in the configuration file
 		for chIdx := range configuration.Chains {
 			chain := model.Chain{
 				ID:  configuration.Chains[chIdx].ID,
@@ -83,6 +85,7 @@ func LoadConfig(configPath string) (model.Config, error) {
 			chains.Entries = append(chains.Entries, chain)
 		}
 
+		// Iterate through accounts in the configuration file
 		for accIdx := range configuration.Accounts {
 			found := false
 			for _, c := range chains.Entries {
@@ -100,6 +103,26 @@ func LoadConfig(configPath string) (model.Config, error) {
 				return config, errors.New(fmt.Sprintf("can not find chain id specified for account %s (%s) in the config", configuration.Accounts[accIdx].Name, configuration.Accounts[accIdx].Address))
 			}
 		}
+
+		// Iterate through accounts in the configuration file
+		for idx := range configuration.Validators {
+			found := false
+			for _, c := range chains.Entries {
+				if strings.ToUpper(c.ID) == strings.ToUpper(configuration.Validators[idx].Chain) {
+					validator := model.Validator{
+						Name:           configuration.Validators[idx].Name,
+						ValoperAddress: configuration.Validators[idx].Valoper,
+						Chain:          c,
+					}
+					validators.Entries = append(validators.Entries, &validator)
+					found = true
+				}
+			}
+			if !found {
+				return config, errors.New(fmt.Sprintf("can not find chain id specified for account %s (%s) in the config", configuration.Accounts[idx].Name, configuration.Accounts[idx].Address))
+			}
+		}
+
 		config.Accounts = accounts
 		config.Validators = validators
 		config.Chains = chains

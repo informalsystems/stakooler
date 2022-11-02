@@ -3,7 +3,6 @@ package cmd
 import (
 	"fmt"
 	"github.com/informalsystems/stakooler/client/cosmos/querier"
-	"github.com/informalsystems/stakooler/client/display"
 	"github.com/informalsystems/stakooler/config"
 	"github.com/schollz/progressbar/v3"
 	"github.com/spf13/cobra"
@@ -30,7 +29,7 @@ It shows the validator's voting power, voting power percentage, ranking, number 
 		if barEnabled {
 			// Progress bar
 			// iterations are the api calls number times the number of accounts
-			totalIterations := len(config.Accounts.Entries) * 6
+			totalIterations := len(config.Validators.Entries) * 2 // two API calls
 			bar = progressbar.NewOptions(totalIterations,
 				progressbar.OptionEnableColorCodes(true),
 				progressbar.OptionShowBytes(false),
@@ -50,21 +49,19 @@ It shows the validator's voting power, voting power percentage, ranking, number 
 		}
 
 		// Load each account details
-		for _, acct := range config.Accounts.Entries {
-
+		for _, validator := range config.Validators.Entries {
 			// Don't show this if csv option enabled
 			if barEnabled {
-				bar.Describe(fmt.Sprintf("Getting account %s details", acct.Address))
+				bar.Describe(fmt.Sprintf("Getting statistics for %s", validator.ValoperAddress))
 			}
 
-			err := querier.LoadTokenInfo(acct, bar)
+			err := querier.LoadValidatorStats(validator, bar)
 			if err != nil {
-				bar.Describe(fmt.Sprintf("failed to retrieve %s details: %s", acct.Address, err))
-				//os.Exit(1)
+				bar.Describe(fmt.Sprintf("failed to retrieve statistics for %s: %s", validator.ValoperAddress, err))
 			} else {
 				// Don't show this if csv option enabled
 				if barEnabled {
-					bar.Describe(fmt.Sprintf("Got account %s details", acct.Address))
+					bar.Describe(fmt.Sprintf("Got validator %s statistics", validator.ValoperAddress))
 				}
 			}
 		}
@@ -73,13 +70,13 @@ It shows the validator's voting power, voting power percentage, ranking, number 
 		bar.Finish()
 
 		// If csv flag specified use csv output
-		if *flagCsv {
-			// write csv file
-			display.WriteCSV(&config.Accounts)
-		} else {
-			// Print table information
-			display.PrintAccountDetailsTable(&config.Accounts)
-		}
+		//if *flagCsv {
+		//	// write csv file
+		//	display.WriteCSV(&config.Validators)
+		//} else {
+		//	// Print table information
+		//	display.PrintAccountDetailsTable(&config.Validators)
+		//}
 	},
 }
 
