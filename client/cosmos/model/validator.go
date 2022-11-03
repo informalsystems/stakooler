@@ -10,15 +10,11 @@ type Validator struct {
 	Name           string
 	ValoperAddress string
 	Chain          Chain
-	Statistics     []Statistic
-}
-
-type Statistic struct {
-	BlockTime     time.Time
-	BlockHeight   int64
-	VotingPower   float64
-	VotingPercent float64
-	Ranking       int
-	NumDelegators int
-	TokensStaked  float64
+	BlockTime      time.Time
+	BlockHeight    string
+	VotingPower    int64
+	VotingPercent  string
+	Ranking        int
+	NumDelegators  string
+	Unbondings     int64
 }

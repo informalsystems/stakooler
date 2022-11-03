@@ -3,7 +3,7 @@ package api
 import (
 	"encoding/json"
 	"github.com/informalsystems/stakooler/client/cosmos/model"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"time"
 )
@@ -187,10 +187,10 @@ type BlockResponse struct {
 	} `json:"block"`
 }
 
-func GetLatestBlock(account *model.Account) (BlockResponse, error) {
+func GetLatestBlock(chain model.Chain) (BlockResponse, error) {
 	var response BlockResponse
 
-	url := account.Chain.LCD + "/cosmos/base/tendermint/v1beta1/blocks/latest"
+	url := chain.LCD + "/cosmos/base/tendermint/v1beta1/blocks/latest"
 	method := "GET"
 
 	client := &http.Client{}
@@ -205,7 +205,36 @@ func GetLatestBlock(account *model.Account) (BlockResponse, error) {
 	}
 	defer res.Body.Close()
 
-	body, err := ioutil.ReadAll(res.Body)
+	body, err := io.ReadAll(res.Body)
+	if err != nil {
+		return response, err
+	}
+	err = json.Unmarshal(body, &response)
+	if err != nil {
+		return response, err
+	}
+	return response, nil
+}
+
+func GetBlock(height string, chain model.Chain) (BlockResponse, error) {
+	var response BlockResponse
+
+	url := chain.LCD + "/cosmos/base/tendermint/v1beta1/blocks/" + height
+	method := "GET"
+
+	client := &http.Client{}
+	req, err := http.NewRequest(method, url, nil)
+
+	if err != nil {
+		return response, err
+	}
+	res, err := client.Do(req)
+	if err != nil {
+		return response, err
+	}
+	defer res.Body.Close()
+
+	body, err := io.ReadAll(res.Body)
 	if err != nil {
 		return response, err
 	}

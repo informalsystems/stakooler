@@ -27,7 +27,7 @@ func LoadTokenInfo(account *model.Account, bar *progressbar.ProgressBar) error {
 
 	// Get Latest Block Information
 	// Use the same block information for all the entries
-	blockResponse, err := api.GetLatestBlock(account)
+	blockResponse, err := api.GetLatestBlock(account.Chain)
 	if err != nil {
 		return errors.New(fmt.Sprintf("failed to get latest block: %s", err))
 	}
