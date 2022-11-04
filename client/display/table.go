@@ -7,6 +7,7 @@ import (
 	"github.com/jedib0t/go-pretty/v6/text"
 	"os"
 	"strings"
+	"time"
 )
 
 func PrintAccountDetailsTable(accounts *model.Accounts) {
@@ -62,6 +63,44 @@ func PrintAccountDetailsTable(accounts *model.Accounts) {
 		{Name: "Unbonding", Align: text.AlignRight, AlignHeader: text.AlignCenter},
 		{Name: "Commissions", Align: text.AlignRight, AlignHeader: text.AlignCenter},
 		{Name: "Total", Align: text.AlignRight, AlignHeader: text.AlignCenter},
+	})
+	t.Render()
+	return
+}
+
+func PrintValidatorStasTable(validators *model.Validators) {
+	t := table.NewWriter()
+	t.SetOutputMirror(os.Stdout)
+	t.SetTitle(strings.ToUpper("Accounts - Details"))
+	t.SetCaption(fmt.Sprintf("Retrieved information for %d validators", len(validators.Entries)))
+	t.AppendHeader(table.Row{"Chain", "Validator Address", "Block Time", "Block Height", "Voting Power (tokens)", "Voting Power (%)", "Ranking", "Delegators", "Total Unbondings (tokens)"})
+
+	for idx := range validators.Entries {
+		validator := validators.Entries[idx]
+		t.AppendRow([]interface{}{
+			validator.Chain.ID,
+			validator.ValoperAddress,
+			validator.BlockTime.Format(time.RFC822),
+			validator.BlockHeight,
+			fmt.Sprintf("%d", validator.VotingPower),
+			fmt.Sprintf("%.2f", validator.VotingPercent),
+			fmt.Sprintf("%d", validator.Ranking),
+			validator.NumDelegators,
+			fmt.Sprintf("%d", validator.Unbondings),
+		})
+		t.AppendSeparator()
+	}
+
+	t.SetColumnConfigs([]table.ColumnConfig{
+		{Name: "Chain", Align: text.AlignLeft, AlignHeader: text.AlignCenter},
+		{Name: "Validator Address", Align: text.AlignLeft, AlignHeader: text.AlignCenter},
+		{Name: "Block Time", Align: text.AlignLeft, AlignHeader: text.AlignCenter},
+		{Name: "Block Height", Align: text.AlignRight, AlignHeader: text.AlignCenter},
+		{Name: "Voting Power", Align: text.AlignRight, AlignHeader: text.AlignCenter},
+		{Name: "Voting Power (%)", Align: text.AlignRight, AlignHeader: text.AlignCenter},
+		{Name: "Ranking", Align: text.AlignRight, AlignHeader: text.AlignCenter},
+		{Name: "Delegators", Align: text.AlignRight, AlignHeader: text.AlignCenter},
+		{Name: "Unbondings", Align: text.AlignRight, AlignHeader: text.AlignCenter},
 	})
 	t.Render()
 	return

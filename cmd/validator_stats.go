@@ -77,7 +77,7 @@ It shows the validator's voting power, voting power percentage, ranking, number 
 			display.WriteValidatorCSV(&config.Validators)
 		} else {
 			// Print table information
-			//display.PrintAccountDetailsTable(&config.Validators)
+			display.PrintValidatorStasTable(&config.Validators)
 		}
 	},
 }
