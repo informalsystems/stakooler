@@ -10,7 +10,7 @@ import (
 )
 
 func LoadValidatorStats(validator *model.Validator, bar *progressbar.ProgressBar) error {
-
+	bar.Add(1)
 	validators, err := api.GetValidators(validator)
 	if err != nil {
 		return err
@@ -30,7 +30,7 @@ func LoadValidatorStats(validator *model.Validator, bar *progressbar.ProgressBar
 	// Find the voting power percent
 	votingPowerShare := float64(validator.VotingPower) / float64(totalVotingPower) * 100.0
 	validator.VotingPercent = votingPowerShare
-
+	bar.Add(1)
 	unbondings, err := api.GetValidatorUnbondings(validator)
 	if err != nil {
 		return err
@@ -49,12 +49,12 @@ func LoadValidatorStats(validator *model.Validator, bar *progressbar.ProgressBar
 		}
 	}
 	validator.Unbondings = totalUnbondings
-
+	bar.Add(1)
 	// Get block time
 	validator.BlockHeight = validators.BlockHeight
 	block, _ := api.GetBlock(validator.BlockHeight, validator.Chain)
 	validator.BlockTime = block.Block.Header.Time
-
+	bar.Add(1)
 	// Get number of delegators
 	delegations, _ := api.GetValidatorDelegations(validator)
 	validator.NumDelegators = delegations.Pagination.Total

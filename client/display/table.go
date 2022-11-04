@@ -73,7 +73,7 @@ func PrintValidatorStasTable(validators *model.Validators) {
 	t.SetOutputMirror(os.Stdout)
 	t.SetTitle(strings.ToUpper("Accounts - Details"))
 	t.SetCaption(fmt.Sprintf("Retrieved information for %d validators", len(validators.Entries)))
-	t.AppendHeader(table.Row{"Chain", "Validator Address", "Block Time", "Block Height", "Voting Power (tokens)", "Voting Power (%)", "Ranking", "Delegators", "Total Unbondings (tokens)"})
+	t.AppendHeader(table.Row{"Chain", "Validator Address", "Block Time", "Block Height", "Voting Power", "V. Power (%)", "Ranking", "Delegators", "Unbondings (tokens)"})
 
 	for idx := range validators.Entries {
 		validator := validators.Entries[idx]
