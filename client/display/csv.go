@@ -9,7 +9,7 @@ import (
 	"time"
 )
 
-func WriteCSV(accounts *model.Accounts) {
+func WriteAccountsCSV(accounts *model.Accounts) {
 
 	// Outputs to Stdout
 	w := csv.NewWriter(os.Stdout)
