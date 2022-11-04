@@ -29,7 +29,7 @@ func LoadValidatorStats(validator *model.Validator, bar *progressbar.ProgressBar
 
 	// Find the voting power percent
 	votingPowerShare := float64(validator.VotingPower) / float64(totalVotingPower) * 100.0
-	validator.VotingPercent = fmt.Sprintf("%.2f\n", votingPowerShare)
+	validator.VotingPercent = votingPowerShare
 
 	unbondings, err := api.GetValidatorUnbondings(validator)
 	if err != nil {
@@ -54,9 +54,8 @@ func LoadValidatorStats(validator *model.Validator, bar *progressbar.ProgressBar
 	validator.BlockHeight = validators.BlockHeight
 	block, _ := api.GetBlock(validator.BlockHeight, validator.Chain)
 	validator.BlockTime = block.Block.Header.Time
-	fmt.Println(validator)
 
-	//TODO: Get number of delegators
+	// Get number of delegators
 	delegations, _ := api.GetValidatorDelegations(validator)
 	validator.NumDelegators = delegations.Pagination.Total
 	return nil

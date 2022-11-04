@@ -13,7 +13,7 @@ type Validator struct {
 	BlockTime      time.Time
 	BlockHeight    string
 	VotingPower    int64
-	VotingPercent  string
+	VotingPercent  float64
 	Ranking        int
 	NumDelegators  string
 	Unbondings     int64

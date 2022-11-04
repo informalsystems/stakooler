@@ -3,6 +3,7 @@ package cmd
 import (
 	"fmt"
 	"github.com/informalsystems/stakooler/client/cosmos/querier"
+	"github.com/informalsystems/stakooler/client/display"
 	"github.com/informalsystems/stakooler/config"
 	"github.com/schollz/progressbar/v3"
 	"github.com/spf13/cobra"
@@ -69,14 +70,15 @@ It shows the validator's voting power, voting power percentage, ranking, number 
 		// Hide bar
 		bar.Finish()
 
+		// TODO: Implement outputs
 		// If csv flag specified use csv output
-		//if *flagCsv {
-		//	// write csv file
-		//	display.WriteCSV(&config.Validators)
-		//} else {
-		//	// Print table information
-		//	display.PrintAccountDetailsTable(&config.Validators)
-		//}
+		if *flagCsv {
+			// write csv file
+			display.WriteValidatorCSV(&config.Validators)
+		} else {
+			// Print table information
+			//display.PrintAccountDetailsTable(&config.Validators)
+		}
 	},
 }
 
