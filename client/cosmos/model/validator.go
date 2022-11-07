@@ -15,6 +15,7 @@ type Validator struct {
 	VotingPower    int64
 	VotingPercent  float64
 	Ranking        int
+	NumValidators  string
 	NumDelegators  string
 	Unbondings     int64
 }

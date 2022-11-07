@@ -71,9 +71,9 @@ func PrintAccountDetailsTable(accounts *model.Accounts) {
 func PrintValidatorStasTable(validators *model.Validators) {
 	t := table.NewWriter()
 	t.SetOutputMirror(os.Stdout)
-	t.SetTitle(strings.ToUpper("Accounts - Details"))
+	t.SetTitle(strings.ToUpper("Validator - Statistics"))
 	t.SetCaption(fmt.Sprintf("Retrieved information for %d validators", len(validators.Entries)))
-	t.AppendHeader(table.Row{"Chain", "Validator Address", "Block Time", "Block Height", "Voting Power", "V. Power (%)", "Ranking", "Delegators", "Unbondings (tokens)"})
+	t.AppendHeader(table.Row{"Chain", "Validator Address", "Block Time", "Block Height", "Voting Power (VP)", "VP (%)", "Ranking", "# Validators", "Delegators", "Unbondings"})
 
 	for idx := range validators.Entries {
 		validator := validators.Entries[idx]
@@ -85,6 +85,7 @@ func PrintValidatorStasTable(validators *model.Validators) {
 			fmt.Sprintf("%d", validator.VotingPower),
 			fmt.Sprintf("%.2f", validator.VotingPercent),
 			fmt.Sprintf("%d", validator.Ranking),
+			validator.NumValidators,
 			validator.NumDelegators,
 			fmt.Sprintf("%d", validator.Unbondings),
 		})
@@ -99,6 +100,7 @@ func PrintValidatorStasTable(validators *model.Validators) {
 		{Name: "Voting Power", Align: text.AlignRight, AlignHeader: text.AlignCenter},
 		{Name: "Voting Power (%)", Align: text.AlignRight, AlignHeader: text.AlignCenter},
 		{Name: "Ranking", Align: text.AlignRight, AlignHeader: text.AlignCenter},
+		{Name: "# Validators", Align: text.AlignRight, AlignHeader: text.AlignCenter},
 		{Name: "Delegators", Align: text.AlignRight, AlignHeader: text.AlignCenter},
 		{Name: "Unbondings", Align: text.AlignRight, AlignHeader: text.AlignCenter},
 	})

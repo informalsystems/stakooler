@@ -30,7 +30,7 @@ It shows the validator's voting power, voting power percentage, ranking, number 
 		if barEnabled {
 			// Progress bar
 			// iterations are the api calls number times the number of accounts
-			totalIterations := len(config.Validators.Entries) * 2 // two API calls
+			totalIterations := len(config.Validators.Entries) * 4 // two API calls
 			bar = progressbar.NewOptions(totalIterations,
 				progressbar.OptionEnableColorCodes(true),
 				progressbar.OptionShowBytes(false),
