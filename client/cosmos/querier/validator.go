@@ -24,6 +24,7 @@ func LoadValidatorStats(validator *model.Validator, bar *progressbar.ProgressBar
 		if strings.ToLower(val.OperatorAddress) == strings.ToLower(validator.ValoperAddress) {
 			validator.VotingPower = val.Tokens
 			validator.Ranking = i + 1
+			validator.Name = val.Description.Moniker
 		}
 		totalVotingPower += val.Tokens
 	}

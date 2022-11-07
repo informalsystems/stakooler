@@ -73,11 +73,12 @@ func PrintValidatorStasTable(validators *model.Validators) {
 	t.SetOutputMirror(os.Stdout)
 	t.SetTitle(strings.ToUpper("Validator - Statistics"))
 	t.SetCaption(fmt.Sprintf("Retrieved information for %d validators", len(validators.Entries)))
-	t.AppendHeader(table.Row{"Chain", "Validator Address", "Block Time", "Block Height", "Voting Power (VP)", "VP (%)", "Ranking", "# Validators", "Delegators", "Unbondings"})
+	t.AppendHeader(table.Row{"Moniker", "Chain", "Validator Address", "Block Time", "Block Height", "Voting Power (VP)", "VP (%)", "Ranking", "# Validators", "Delegators", "Unbondings"})
 
 	for idx := range validators.Entries {
 		validator := validators.Entries[idx]
 		t.AppendRow([]interface{}{
+			validator.Name,
 			validator.Chain.ID,
 			validator.ValoperAddress,
 			validator.BlockTime.Format(time.RFC822),
@@ -93,6 +94,7 @@ func PrintValidatorStasTable(validators *model.Validators) {
 	}
 
 	t.SetColumnConfigs([]table.ColumnConfig{
+		{Name: "Moniker", Align: text.AlignLeft, AlignHeader: text.AlignCenter},
 		{Name: "Chain", Align: text.AlignLeft, AlignHeader: text.AlignCenter},
 		{Name: "Validator Address", Align: text.AlignLeft, AlignHeader: text.AlignCenter},
 		{Name: "Block Time", Align: text.AlignLeft, AlignHeader: text.AlignCenter},
