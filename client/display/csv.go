@@ -62,7 +62,7 @@ func WriteValidatorCSV(validators *model.Validators) {
 	w := csv.NewWriter(os.Stdout)
 	defer w.Flush()
 
-	header := []string{"chain_id", "valoper_address", "block_time", "block_height", "voting_power_tokens", "voting_power_percent", "ranking", "delegators", "unbondings"}
+	header := []string{"moniker", "chain_id", "valoper_address", "block_time", "block_height", "voting_power_tokens", "voting_power_percent", "ranking", "delegators", "unbondings"}
 	if err := w.Write(header); err != nil {
 		log.Fatalln("error writing record to file", err)
 	}
@@ -70,6 +70,7 @@ func WriteValidatorCSV(validators *model.Validators) {
 		validator := validators.Entries[idx]
 
 		record := []string{
+			validator.Name,
 			validator.Chain.ID,
 			validator.ValoperAddress,
 			validator.BlockTime.Format(time.RFC822),

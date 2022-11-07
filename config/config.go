@@ -78,6 +78,7 @@ func LoadConfig(configPath string) (model.Config, error) {
 
 		// Iterate through chains in the configuration file
 		for chIdx := range configuration.Chains {
+			// TODO: If LCD is missing then error out
 			chain := model.Chain{
 				ID:  configuration.Chains[chIdx].ID,
 				LCD: configuration.Chains[chIdx].LCD,
