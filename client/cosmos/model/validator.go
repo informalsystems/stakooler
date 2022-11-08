@@ -7,7 +7,7 @@ type Validators struct {
 }
 
 type Validator struct {
-	Name           string
+	Moniker        string
 	ValoperAddress string
 	Chain          Chain
 	BlockTime      time.Time

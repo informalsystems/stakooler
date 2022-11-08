@@ -28,7 +28,7 @@ func LoadValidatorStats(validator *model.Validator, bar *progressbar.ProgressBar
 		tJ, _ := strconv.ParseInt(validators.ValidatorsResponse[j].Tokens[:len(validators.ValidatorsResponse[j].Tokens)-validator.Chain.Exponent], 10, 64)
 		return tI >= tJ
 	})
-	
+
 	// Get total voting power
 	for i, val := range validators.ValidatorsResponse {
 		tokenConverted, err := strconv.ParseInt(val.Tokens[:len(val.Tokens)-validator.Chain.Exponent], 10, 64)
@@ -38,7 +38,7 @@ func LoadValidatorStats(validator *model.Validator, bar *progressbar.ProgressBar
 		if strings.ToLower(val.OperatorAddress) == strings.ToLower(validator.ValoperAddress) {
 			validator.VotingPower = tokenConverted
 			validator.Ranking = i + 1
-			validator.Name = val.Description.Moniker
+			validator.Moniker = val.Description.Moniker
 		}
 		totalVotingPower += tokenConverted
 	}

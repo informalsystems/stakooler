@@ -71,7 +71,6 @@ It shows the validator's voting power, voting power percentage, ranking, number 
 		// Hide bar
 		bar.Finish()
 
-		// TODO: Implement outputs
 		// If csv flag specified use csv output
 		if *flagCsv {
 			// write csv file

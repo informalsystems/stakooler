@@ -82,7 +82,7 @@ func PrintValidatorStasTable(validators *model.Validators) {
 		p := message.NewPrinter(language.English)
 
 		t.AppendRow([]interface{}{
-			validator.Name,
+			validator.Moniker,
 			validator.Chain.ID,
 			validator.ValoperAddress,
 			validator.BlockTime.Format(time.RFC822),

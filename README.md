@@ -26,6 +26,13 @@ address = "[cosmos address bech-32]" # account address
 chain = "[a chain id matching one from the chains section]" # this should match the chain id of one of the chains configured
 
 ########################
+# Validators           #
+########################
+[[validators]]
+valoper = "cosmosvaloper16k579jk6yt2cwmqx9dz5xvq9fug2tekvlu9qdv"
+chain = "cosmoshub"
+
+########################
 # Chains               #
 ########################
 

@@ -70,7 +70,7 @@ func WriteValidatorCSV(validators *model.Validators) {
 		validator := validators.Entries[idx]
 
 		record := []string{
-			validator.Name,
+			validator.Moniker,
 			validator.Chain.ID,
 			validator.ValoperAddress,
 			validator.BlockTime.Format(time.RFC822),

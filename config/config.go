@@ -20,9 +20,8 @@ type AccountConfig struct {
 }
 
 type ValidatorsConfig struct {
-	Name    string
-	Valoper string
-	Chain   string
+	ValoperAddress string
+	Chain          string
 }
 
 type ChainConfig struct {
@@ -137,8 +136,7 @@ func LoadConfig(configPath string) (model.Config, error) {
 			for _, c := range chains.Entries {
 				if strings.ToUpper(c.ID) == strings.ToUpper(configuration.Validators[idx].Chain) {
 					validator := model.Validator{
-						Name:           configuration.Validators[idx].Name,
-						ValoperAddress: configuration.Validators[idx].Valoper,
+						ValoperAddress: configuration.Validators[idx].ValoperAddress,
 						Chain:          c,
 					}
 					validators.Entries = append(validators.Entries, &validator)
