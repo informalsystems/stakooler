@@ -10,15 +10,13 @@ import (
 	"os"
 )
 
-var flagCsv *bool
-
 // represents the 'accounts details' command
-var accountDetailsCmd = &cobra.Command{
-	Use:   "details",
-	Short: "Shows detailed information about accounts",
-	Long: `This command shows detailed information about configured accounts. For example:
+var validatorStatsCmd = &cobra.Command{
+	Use:   "stats",
+	Short: "Shows detailed information about a validator statistics",
+	Long: `This command shows detailed information about a validator statistics. For example:
 
-It shows tokens balance, rewards, delegation and unbonding values per account`,
+It shows the validator's voting power, voting power percentage, ranking, number of delegators per chain`,
 	Run: func(cmd *cobra.Command, args []string) {
 		barEnabled := !*flagCsv
 		config, err := config.LoadConfig(flagConfigPath)
@@ -32,7 +30,7 @@ It shows tokens balance, rewards, delegation and unbonding values per account`,
 		if barEnabled {
 			// Progress bar
 			// iterations are the api calls number times the number of accounts
-			totalIterations := len(config.Accounts.Entries) * 6
+			totalIterations := len(config.Validators.Entries) * 5 // two API calls
 			bar = progressbar.NewOptions(totalIterations,
 				progressbar.OptionEnableColorCodes(true),
 				progressbar.OptionShowBytes(false),
@@ -52,21 +50,20 @@ It shows tokens balance, rewards, delegation and unbonding values per account`,
 		}
 
 		// Load each account details
-		for _, acct := range config.Accounts.Entries {
-
+		for _, validator := range config.Validators.Entries {
 			// Don't show this if csv option enabled
 			if barEnabled {
-				bar.Describe(fmt.Sprintf("Getting account %s details", acct.Address))
+				bar.Describe(fmt.Sprintf("Getting statistics for %s", validator.ValoperAddress))
 			}
 
-			err := querier.LoadTokenInfo(acct, bar)
+			err := querier.LoadValidatorStats(validator, bar)
 			if err != nil {
-				bar.Describe(fmt.Sprintf("failed to retrieve %s details: %s", acct.Address, err))
-				//os.Exit(1)
+				fmt.Printf("Error loading validator stats: %s\n", err)
+				bar.Describe(fmt.Sprintf("failed to retrieve statistics for %s: %s", validator.ValoperAddress, err))
 			} else {
 				// Don't show this if csv option enabled
 				if barEnabled {
-					bar.Describe(fmt.Sprintf("Got account %s details", acct.Address))
+					bar.Describe(fmt.Sprintf("Got validator %s statistics", validator.ValoperAddress))
 				}
 			}
 		}
@@ -77,15 +74,15 @@ It shows tokens balance, rewards, delegation and unbonding values per account`,
 		// If csv flag specified use csv output
 		if *flagCsv {
 			// write csv file
-			display.WriteAccountsCSV(&config.Accounts)
+			display.WriteValidatorCSV(&config.Validators)
 		} else {
 			// Print table information
-			display.PrintAccountDetailsTable(&config.Accounts)
+			display.PrintValidatorStasTable(&config.Validators)
 		}
 	},
 }
 
 func init() {
-	flagCsv = accountDetailsCmd.Flags().BoolP("csv", "c", false, "output the result to a csv format")
-	accountsCmd.AddCommand(accountDetailsCmd)
+	flagCsv = validatorStatsCmd.Flags().BoolP("csv", "c", false, "output the result to a csv format")
+	validatorCmd.AddCommand(validatorStatsCmd)
 }

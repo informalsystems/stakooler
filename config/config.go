@@ -3,6 +3,9 @@ package config
 import (
 	"errors"
 	"fmt"
+	_ "github.com/cosmos/cosmos-sdk/types/bech32"
+	"github.com/informalsystems/stakooler/client/cosmos/api"
+	"github.com/informalsystems/stakooler/client/cosmos/api/chain_registry"
 	"github.com/informalsystems/stakooler/client/cosmos/model"
 	"github.com/spf13/viper"
 	"path/filepath"
@@ -16,17 +19,25 @@ type AccountConfig struct {
 	Chain   string
 }
 
+type ValidatorsConfig struct {
+	ValoperAddress string
+	Chain          string
+}
+
 type ChainConfig struct {
-	ID  string
-	LCD string
+	ID       string
+	LCD      string
+	Denom    string
+	Exponent int
 }
 
-type Config struct {
-	Accounts []AccountConfig
-	Chains   []ChainConfig
+type Configuration struct {
+	Accounts   []AccountConfig
+	Validators []ValidatorsConfig
+	Chains     []ChainConfig
 }
 
-func LoadConfig(configPath string) (model.Accounts, error) {
+func LoadConfig(configPath string) (model.Config, error) {
 
 	if configPath != "" {
 		p := filepath.Join(configPath)
@@ -44,54 +55,105 @@ func LoadConfig(configPath string) (model.Accounts, error) {
 		viper.AddConfigPath(".")
 	}
 
+	config := model.Config{}
 	accounts := model.Accounts{}
 	chains := model.Chains{}
+	validators := model.Validators{}
 
 	err := viper.ReadInConfig() // Find and read the config file
 
 	if err != nil { // Handle errors reading the config file
 		if reflect.TypeOf(err).Kind() == reflect.TypeOf(viper.ConfigFileNotFoundError{}).Kind() {
 			if configPath != "" {
-				return accounts, errors.New("no configuration found at " + configPath)
+				return config, errors.New("no configuration found at " + configPath)
 			} else {
-				return accounts, errors.New("cannot find config.toml in default locations ($HOME/.stakooler) or (current directory)")
+				return config, errors.New("cannot find config.toml in default locations ($HOME/.stakooler) or (current directory)")
 			}
 		} else {
-			return accounts, errors.New(fmt.Sprintf("%s", err))
+			return config, errors.New(fmt.Sprintf("%s", err))
 		}
 	} else {
-		var config Config
-		err := viper.Unmarshal(&config)
+		var configuration Configuration
+		err := viper.Unmarshal(&configuration)
 		if err != nil {
-			return accounts, errors.New(fmt.Sprintf("can not decode configuration: %s", err))
+			return config, errors.New(fmt.Sprintf("can not decode configuration: %s", err))
 		}
 
-		for chIdx := range config.Chains {
+		// Iterate through chains in the configuration file
+		for chIdx := range configuration.Chains {
+			// Get Assets list for the chain
+			assets, err := chain_registry.GetAssetsList(configuration.Chains[chIdx].ID)
+			if err != nil {
+				return config, errors.New(fmt.Sprintf("cannot retrieve assets list for chain %s: %s", configuration.Chains[chIdx].ID, err))
+			}
+
+			for _, asset := range assets.Assets {
+				denom, err := api.GetStakingParams(configuration.Chains[chIdx].LCD)
+				if err != nil {
+					return config, errors.New(fmt.Sprintf("cannot retrieve staking params: %s", err))
+				}
+				if asset.Base == denom.ParamsResponse.BondDenom {
+					configuration.Chains[chIdx].Denom = asset.Symbol
+					for _, du := range asset.DenomUnits {
+						if du.Denom == asset.Display {
+							configuration.Chains[chIdx].Exponent = du.Exponent
+						}
+					}
+				}
+			}
 			chain := model.Chain{
-				ID:  config.Chains[chIdx].ID,
-				LCD: config.Chains[chIdx].LCD,
+				ID:       configuration.Chains[chIdx].ID,
+				LCD:      configuration.Chains[chIdx].LCD,
+				Denom:    configuration.Chains[chIdx].Denom,
+				Exponent: configuration.Chains[chIdx].Exponent,
 			}
 			chains.Entries = append(chains.Entries, chain)
 		}
 
-		for accIdx := range config.Accounts {
+		// Iterate through accounts in the configuration file
+		for accIdx := range configuration.Accounts {
 			found := false
 			for _, c := range chains.Entries {
-				if strings.ToUpper(c.ID) == strings.ToUpper(config.Accounts[accIdx].Chain) {
+				if strings.ToUpper(c.ID) == strings.ToUpper(configuration.Accounts[accIdx].Chain) {
 					account := model.Account{
-						Name:    config.Accounts[accIdx].Name,
-						Address: config.Accounts[accIdx].Address,
+						Name:    configuration.Accounts[accIdx].Name,
+						Address: configuration.Accounts[accIdx].Address,
 						Chain:   c,
 					}
 					accounts.Entries = append(accounts.Entries, &account)
 					found = true
+					break
 				}
 			}
 			if !found {
-				return accounts, errors.New(fmt.Sprintf("can not find chain id specified for account %s (%s) in the config", config.Accounts[accIdx].Name, config.Accounts[accIdx].Address))
+				return config, errors.New(fmt.Sprintf("can not find chain id specified for account %s (%s) in the config", configuration.Accounts[accIdx].Name, configuration.Accounts[accIdx].Address))
 			}
 		}
-		return accounts, nil
+
+		// Iterate through accounts in the configuration file
+		for idx := range configuration.Validators {
+			found := false
+			for _, c := range chains.Entries {
+				if strings.ToUpper(c.ID) == strings.ToUpper(configuration.Validators[idx].Chain) {
+					validator := model.Validator{
+						ValoperAddress: configuration.Validators[idx].ValoperAddress,
+						Chain:          c,
+					}
+					validators.Entries = append(validators.Entries, &validator)
+					found = true
+					break
+				}
+			}
+			if !found {
+				return config, errors.New(fmt.Sprintf("can not find chain id specified for account %s (%s) in the config", configuration.Accounts[idx].Name, configuration.Accounts[idx].Address))
+
+			}
+		}
+
+		config.Accounts = accounts
+		config.Validators = validators
+		config.Chains = chains
+
+		return config, nil
 	}
-	return accounts, nil
 }

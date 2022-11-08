@@ -5,8 +5,11 @@ import (
 	"github.com/informalsystems/stakooler/client/cosmos/model"
 	"github.com/jedib0t/go-pretty/v6/table"
 	"github.com/jedib0t/go-pretty/v6/text"
+	"golang.org/x/text/language"
+	"golang.org/x/text/message"
 	"os"
 	"strings"
+	"time"
 )
 
 func PrintAccountDetailsTable(accounts *model.Accounts) {
@@ -62,6 +65,50 @@ func PrintAccountDetailsTable(accounts *model.Accounts) {
 		{Name: "Unbonding", Align: text.AlignRight, AlignHeader: text.AlignCenter},
 		{Name: "Commissions", Align: text.AlignRight, AlignHeader: text.AlignCenter},
 		{Name: "Total", Align: text.AlignRight, AlignHeader: text.AlignCenter},
+	})
+	t.Render()
+	return
+}
+
+func PrintValidatorStasTable(validators *model.Validators) {
+	t := table.NewWriter()
+	t.SetOutputMirror(os.Stdout)
+	t.SetTitle(strings.ToUpper("Validator - Statistics"))
+	t.SetCaption(fmt.Sprintf("Retrieved information for %d validators", len(validators.Entries)))
+	t.AppendHeader(table.Row{"Moniker", "Chain", "Validator Address", "Block Time", "Block Height", "Voting Power (VP)", "VP (%)", "Ranking", "# Validators", "Delegators", "Unbondings"})
+
+	for idx := range validators.Entries {
+		validator := validators.Entries[idx]
+		p := message.NewPrinter(language.English)
+
+		t.AppendRow([]interface{}{
+			validator.Moniker,
+			validator.Chain.ID,
+			validator.ValoperAddress,
+			validator.BlockTime.Format(time.RFC822),
+			validator.BlockHeight,
+			p.Sprintf("%d (%s)", validator.VotingPower, validator.Chain.Denom),
+			p.Sprintf("%.2f", validator.VotingPercent),
+			p.Sprintf("%d", validator.Ranking),
+			validator.NumValidators,
+			validator.NumDelegators,
+			p.Sprintf("%d (%s)", validator.Unbondings, validator.Chain.Denom),
+		})
+		t.AppendSeparator()
+	}
+
+	t.SetColumnConfigs([]table.ColumnConfig{
+		{Name: "Moniker", Align: text.AlignLeft, AlignHeader: text.AlignCenter},
+		{Name: "Chain", Align: text.AlignLeft, AlignHeader: text.AlignCenter},
+		{Name: "Validator Address", Align: text.AlignLeft, AlignHeader: text.AlignCenter},
+		{Name: "Block Time", Align: text.AlignLeft, AlignHeader: text.AlignCenter},
+		{Name: "Block Height", Align: text.AlignRight, AlignHeader: text.AlignCenter},
+		{Name: "Voting Power", Align: text.AlignRight, AlignHeader: text.AlignCenter},
+		{Name: "Voting Power (%)", Align: text.AlignRight, AlignHeader: text.AlignCenter},
+		{Name: "Ranking", Align: text.AlignRight, AlignHeader: text.AlignCenter},
+		{Name: "# Validators", Align: text.AlignRight, AlignHeader: text.AlignCenter},
+		{Name: "Delegators", Align: text.AlignRight, AlignHeader: text.AlignCenter},
+		{Name: "Unbondings", Align: text.AlignRight, AlignHeader: text.AlignCenter},
 	})
 	t.Render()
 	return

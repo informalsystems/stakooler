@@ -9,7 +9,7 @@ import (
 	"time"
 )
 
-func WriteCSV(accounts *model.Accounts) {
+func WriteAccountsCSV(accounts *model.Accounts) {
 
 	// Outputs to Stdout
 	w := csv.NewWriter(os.Stdout)
@@ -52,6 +52,37 @@ func WriteCSV(accounts *model.Accounts) {
 					log.Fatalln("error writing record", err)
 				}
 			}
+		}
+	}
+}
+
+func WriteValidatorCSV(validators *model.Validators) {
+
+	// Outputs to Stdout
+	w := csv.NewWriter(os.Stdout)
+	defer w.Flush()
+
+	header := []string{"moniker", "chain_id", "valoper_address", "block_time", "block_height", "voting_power_tokens", "voting_power_percent", "ranking", "delegators", "unbondings"}
+	if err := w.Write(header); err != nil {
+		log.Fatalln("error writing record to file", err)
+	}
+	for idx := range validators.Entries {
+		validator := validators.Entries[idx]
+
+		record := []string{
+			validator.Moniker,
+			validator.Chain.ID,
+			validator.ValoperAddress,
+			validator.BlockTime.Format(time.RFC822),
+			validator.BlockHeight,
+			fmt.Sprintf("%d", validator.VotingPower),
+			fmt.Sprintf("%.2f", validator.VotingPercent),
+			fmt.Sprintf("%d", validator.Ranking),
+			validator.NumDelegators,
+			fmt.Sprintf("%d", validator.Unbondings),
+		}
+		if err := w.Write(record); err != nil {
+			log.Fatalln("error writing record", err)
 		}
 	}
 }
