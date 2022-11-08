@@ -130,7 +130,7 @@ func LoadTokenInfo(account *model.Account, bar *progressbar.ProgressBar) error {
 	for i := range unbondings.UnbondingResponses {
 		unbonding := unbondings.UnbondingResponses[i]
 		for i := range unbonding.Entries {
-			params, err := api.GetStakingParams(account)
+			params, err := api.GetStakingParams(account.Chain.LCD)
 			if err != nil {
 				return errors.New(fmt.Sprintf("failed to get staking params: %s", err))
 			}

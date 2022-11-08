@@ -4,6 +4,8 @@ import (
 	"errors"
 	"fmt"
 	_ "github.com/cosmos/cosmos-sdk/types/bech32"
+	"github.com/informalsystems/stakooler/client/cosmos/api"
+	"github.com/informalsystems/stakooler/client/cosmos/api/chain_registry"
 	"github.com/informalsystems/stakooler/client/cosmos/model"
 	"github.com/spf13/viper"
 	"path/filepath"
@@ -24,8 +26,10 @@ type ValidatorsConfig struct {
 }
 
 type ChainConfig struct {
-	ID  string
-	LCD string
+	ID       string
+	LCD      string
+	Denom    string
+	Exponent int
 }
 
 type Configuration struct {
@@ -78,10 +82,31 @@ func LoadConfig(configPath string) (model.Config, error) {
 
 		// Iterate through chains in the configuration file
 		for chIdx := range configuration.Chains {
-			// TODO: If LCD is missing then error out
+			// Get Assets list for the chain
+			assets, err := chain_registry.GetAssetsList(configuration.Chains[chIdx].ID)
+			if err != nil {
+				return config, errors.New(fmt.Sprintf("cannot retrieve assets list for chain %s: %s", configuration.Chains[chIdx].ID, err))
+			}
+
+			for _, asset := range assets.Assets {
+				denom, err := api.GetStakingParams(configuration.Chains[chIdx].LCD)
+				if err != nil {
+					return config, errors.New(fmt.Sprintf("cannot retrieve staking params: %s", err))
+				}
+				if asset.Base == denom.ParamsResponse.BondDenom {
+					configuration.Chains[chIdx].Denom = asset.Symbol
+					for _, du := range asset.DenomUnits {
+						if du.Denom == asset.Display {
+							configuration.Chains[chIdx].Exponent = du.Exponent
+						}
+					}
+				}
+			}
 			chain := model.Chain{
-				ID:  configuration.Chains[chIdx].ID,
-				LCD: configuration.Chains[chIdx].LCD,
+				ID:       configuration.Chains[chIdx].ID,
+				LCD:      configuration.Chains[chIdx].LCD,
+				Denom:    configuration.Chains[chIdx].Denom,
+				Exponent: configuration.Chains[chIdx].Exponent,
 			}
 			chains.Entries = append(chains.Entries, chain)
 		}

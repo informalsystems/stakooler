@@ -30,7 +30,7 @@ It shows the validator's voting power, voting power percentage, ranking, number 
 		if barEnabled {
 			// Progress bar
 			// iterations are the api calls number times the number of accounts
-			totalIterations := len(config.Validators.Entries) * 4 // two API calls
+			totalIterations := len(config.Validators.Entries) * 5 // two API calls
 			bar = progressbar.NewOptions(totalIterations,
 				progressbar.OptionEnableColorCodes(true),
 				progressbar.OptionShowBytes(false),
@@ -58,6 +58,7 @@ It shows the validator's voting power, voting power percentage, ranking, number 
 
 			err := querier.LoadValidatorStats(validator, bar)
 			if err != nil {
+				fmt.Printf("Error loading validator stats: %s\n", err)
 				bar.Describe(fmt.Sprintf("failed to retrieve statistics for %s: %s", validator.ValoperAddress, err))
 			} else {
 				// Don't show this if csv option enabled

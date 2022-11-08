@@ -1,15 +1,18 @@
 package querier
 
 import (
+	"errors"
 	"fmt"
 	"github.com/informalsystems/stakooler/client/cosmos/api"
 	"github.com/informalsystems/stakooler/client/cosmos/model"
 	"github.com/schollz/progressbar/v3"
+	"sort"
 	"strconv"
 	"strings"
 )
 
 func LoadValidatorStats(validator *model.Validator, bar *progressbar.ProgressBar) error {
+
 	// Get validators
 	validators, err := api.GetValidators(validator)
 	if err != nil {
@@ -19,14 +22,25 @@ func LoadValidatorStats(validator *model.Validator, bar *progressbar.ProgressBar
 
 	var totalVotingPower int64
 
+	// Sort validators by voting power (descending)
+	sort.Slice(validators.ValidatorsResponse, func(i, j int) bool {
+		tI, _ := strconv.ParseInt(validators.ValidatorsResponse[i].Tokens[:len(validators.ValidatorsResponse[i].Tokens)-validator.Chain.Exponent], 10, 64)
+		tJ, _ := strconv.ParseInt(validators.ValidatorsResponse[j].Tokens[:len(validators.ValidatorsResponse[j].Tokens)-validator.Chain.Exponent], 10, 64)
+		return tI >= tJ
+	})
+	
 	// Get total voting power
 	for i, val := range validators.ValidatorsResponse {
+		tokenConverted, err := strconv.ParseInt(val.Tokens[:len(val.Tokens)-validator.Chain.Exponent], 10, 64)
+		if err != nil {
+			return errors.New(fmt.Sprintf("cannot convert tokens for voting power: %s", err))
+		}
 		if strings.ToLower(val.OperatorAddress) == strings.ToLower(validator.ValoperAddress) {
-			validator.VotingPower = val.Tokens
+			validator.VotingPower = tokenConverted
 			validator.Ranking = i + 1
 			validator.Name = val.Description.Moniker
 		}
-		totalVotingPower += val.Tokens
+		totalVotingPower += tokenConverted
 	}
 
 	// Find the voting power percent
@@ -44,12 +58,18 @@ func LoadValidatorStats(validator *model.Validator, bar *progressbar.ProgressBar
 
 	// Get total voting power
 	for _, unbonding := range unbondings.UnbondingResponses {
+
 		for _, entry := range unbonding.Entries {
-			b, err := strconv.Atoi(entry.Balance)
-			if err != nil {
-				fmt.Sprintf("Error voting power: %s", err)
+			if len(entry.Balance) > validator.Chain.Exponent {
+				unbonding := entry.Balance[:len(entry.Balance)-validator.Chain.Exponent]
+				if unbonding != "" {
+					unbondingConverted, err := strconv.ParseInt(unbonding, 10, 64)
+					if err != nil {
+						return errors.New(fmt.Sprintf("cannot convert unbondings: %s", err))
+					}
+					totalUnbondings += unbondingConverted
+				}
 			}
-			totalUnbondings += int64(b)
 		}
 	}
 	validator.Unbondings = totalUnbondings

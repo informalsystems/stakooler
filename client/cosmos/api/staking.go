@@ -6,7 +6,6 @@ import (
 	"github.com/informalsystems/stakooler/client/cosmos/model"
 	"io"
 	"net/http"
-	"sort"
 	"time"
 )
 
@@ -83,7 +82,7 @@ type Validators struct {
 		} `json:"consensus_pubkey"`
 		Jailed          bool   `json:"jailed"`
 		Status          string `json:"status"`
-		Tokens          int64  `json:"tokens,string"`
+		Tokens          string `json:"tokens"`
 		DelegatorShares string `json:"delegator_shares"`
 		Description     struct {
 			Moniker         string `json:"moniker"`
@@ -176,10 +175,10 @@ func GetUnbondings(account *model.Account) (Unbondings, error) {
 	return unbondings, nil
 }
 
-func GetStakingParams(account *model.Account) (Params, error) {
+func GetStakingParams(chainEndpoint string) (Params, error) {
 	var params Params
 
-	url := account.Chain.LCD + "/cosmos/staking/v1beta1/params"
+	url := chainEndpoint + "/cosmos/staking/v1beta1/params"
 	method := "GET"
 
 	client := &http.Client{}
@@ -268,11 +267,6 @@ func GetValidators(validator *model.Validator) (Validators, error) {
 		fmt.Println(err)
 		return validators, err
 	}
-
-	// Sort validators by voting power (descending)
-	sort.Slice(validators.ValidatorsResponse, func(i, j int) bool {
-		return validators.ValidatorsResponse[i].Tokens >= validators.ValidatorsResponse[j].Tokens
-	})
 
 	// Add block height
 	validators.BlockHeight = res.Header.Get("Grpc-Metadata-X-Cosmos-Block-Height")

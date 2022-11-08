@@ -83,12 +83,12 @@ func PrintValidatorStasTable(validators *model.Validators) {
 			validator.ValoperAddress,
 			validator.BlockTime.Format(time.RFC822),
 			validator.BlockHeight,
-			fmt.Sprintf("%d", validator.VotingPower),
+			fmt.Sprintf("%d (%s)", validator.VotingPower, validator.Chain.Denom),
 			fmt.Sprintf("%.2f", validator.VotingPercent),
 			fmt.Sprintf("%d", validator.Ranking),
 			validator.NumValidators,
 			validator.NumDelegators,
-			fmt.Sprintf("%d", validator.Unbondings),
+			fmt.Sprintf("%d (%s)", validator.Unbondings, validator.Chain.Denom),
 		})
 		t.AppendSeparator()
 	}
