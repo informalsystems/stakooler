@@ -123,6 +123,7 @@ func LoadConfig(configPath string) (model.Config, error) {
 					}
 					accounts.Entries = append(accounts.Entries, &account)
 					found = true
+					break
 				}
 			}
 			if !found {
@@ -142,10 +143,12 @@ func LoadConfig(configPath string) (model.Config, error) {
 					}
 					validators.Entries = append(validators.Entries, &validator)
 					found = true
+					break
 				}
 			}
 			if !found {
 				return config, errors.New(fmt.Sprintf("can not find chain id specified for account %s (%s) in the config", configuration.Accounts[idx].Name, configuration.Accounts[idx].Address))
+
 			}
 		}
 

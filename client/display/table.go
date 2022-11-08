@@ -5,6 +5,8 @@ import (
 	"github.com/informalsystems/stakooler/client/cosmos/model"
 	"github.com/jedib0t/go-pretty/v6/table"
 	"github.com/jedib0t/go-pretty/v6/text"
+	"golang.org/x/text/language"
+	"golang.org/x/text/message"
 	"os"
 	"strings"
 	"time"
@@ -77,18 +79,20 @@ func PrintValidatorStasTable(validators *model.Validators) {
 
 	for idx := range validators.Entries {
 		validator := validators.Entries[idx]
+		p := message.NewPrinter(language.English)
+
 		t.AppendRow([]interface{}{
 			validator.Name,
 			validator.Chain.ID,
 			validator.ValoperAddress,
 			validator.BlockTime.Format(time.RFC822),
 			validator.BlockHeight,
-			fmt.Sprintf("%d (%s)", validator.VotingPower, validator.Chain.Denom),
-			fmt.Sprintf("%.2f", validator.VotingPercent),
-			fmt.Sprintf("%d", validator.Ranking),
+			p.Sprintf("%d (%s)", validator.VotingPower, validator.Chain.Denom),
+			p.Sprintf("%.2f", validator.VotingPercent),
+			p.Sprintf("%d", validator.Ranking),
 			validator.NumValidators,
 			validator.NumDelegators,
-			fmt.Sprintf("%d (%s)", validator.Unbondings, validator.Chain.Denom),
+			p.Sprintf("%d (%s)", validator.Unbondings, validator.Chain.Denom),
 		})
 		t.AppendSeparator()
 	}
