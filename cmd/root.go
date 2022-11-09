@@ -32,6 +32,8 @@ func init() {
 
 	// Add flags
 	addGlobalFlags(rootCmd)
+
+	cobra.EnableCommandSorting = true
 }
 
 func initConfig() {

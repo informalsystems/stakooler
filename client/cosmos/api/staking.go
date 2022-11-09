@@ -239,7 +239,7 @@ func GetStakingParams(chainEndpoint string) (Params, error) {
 //	return valset, nil
 //}
 
-func GetValidators(validator *model.Validator) (Validators, error) {
+func GetChainValidators(validator *model.Validator) (Validators, error) {
 	var validators Validators
 
 	url := validator.Chain.LCD + "/cosmos/staking/v1beta1/validators?pagination.limit=1000&pagination.count_total=true&status=BOND_STATUS_BONDED"
@@ -276,7 +276,6 @@ func GetValidators(validator *model.Validator) (Validators, error) {
 
 func GetValidatorUnbondings(validator *model.Validator) (Unbondings, error) {
 	var unbondings Unbondings
-
 	url := validator.Chain.LCD + "/cosmos/staking/v1beta1/validators/" + validator.ValoperAddress + "/unbonding_delegations"
 	method := "GET"
 
