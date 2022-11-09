@@ -4,12 +4,10 @@ import (
 	"errors"
 	"fmt"
 	_ "github.com/cosmos/cosmos-sdk/types/bech32"
-	"github.com/informalsystems/stakooler/client/cosmos/api"
-	"github.com/informalsystems/stakooler/client/cosmos/api/chain_registry"
 	"github.com/informalsystems/stakooler/client/cosmos/model"
+	"github.com/rs/zerolog/log"
 	"github.com/spf13/viper"
 	"path/filepath"
-	"reflect"
 	"strings"
 )
 
@@ -20,8 +18,8 @@ type AccountConfig struct {
 }
 
 type ValidatorsConfig struct {
-	ValoperAddress string
-	Chain          string
+	Valoper string
+	Chain   string
 }
 
 type ChainConfig struct {
@@ -63,44 +61,18 @@ func LoadConfig(configPath string) (model.Config, error) {
 	err := viper.ReadInConfig() // Find and read the config file
 
 	if err != nil { // Handle errors reading the config file
-		if reflect.TypeOf(err).Kind() == reflect.TypeOf(viper.ConfigFileNotFoundError{}).Kind() {
-			if configPath != "" {
-				return config, errors.New("no configuration found at " + configPath)
-			} else {
-				return config, errors.New("cannot find config.toml in default locations ($HOME/.stakooler) or (current directory)")
-			}
-		} else {
-			return config, errors.New(fmt.Sprintf("%s", err))
-		}
+		log.Error().Err(err).Msg("error reading configuration file")
+		return config, err
 	} else {
 		var configuration Configuration
 		err := viper.Unmarshal(&configuration)
 		if err != nil {
-			return config, errors.New(fmt.Sprintf("can not decode configuration: %s", err))
+			log.Error().Err(err).Msg("cannot unmarshall configuration file")
+			return config, err
 		}
 
 		// Iterate through chains in the configuration file
 		for chIdx := range configuration.Chains {
-			// Get Assets list for the chain
-			assets, err := chain_registry.GetAssetsList(configuration.Chains[chIdx].ID)
-			if err != nil {
-				return config, errors.New(fmt.Sprintf("cannot retrieve assets list for chain %s: %s", configuration.Chains[chIdx].ID, err))
-			}
-
-			for _, asset := range assets.Assets {
-				denom, err := api.GetStakingParams(configuration.Chains[chIdx].LCD)
-				if err != nil {
-					return config, errors.New(fmt.Sprintf("cannot retrieve staking params: %s", err))
-				}
-				if asset.Base == denom.ParamsResponse.BondDenom {
-					configuration.Chains[chIdx].Denom = asset.Symbol
-					for _, du := range asset.DenomUnits {
-						if du.Denom == asset.Display {
-							configuration.Chains[chIdx].Exponent = du.Exponent
-						}
-					}
-				}
-			}
 			chain := model.Chain{
 				ID:       configuration.Chains[chIdx].ID,
 				LCD:      configuration.Chains[chIdx].LCD,
@@ -136,7 +108,7 @@ func LoadConfig(configPath string) (model.Config, error) {
 			for _, c := range chains.Entries {
 				if strings.ToUpper(c.ID) == strings.ToUpper(configuration.Validators[idx].Chain) {
 					validator := model.Validator{
-						ValoperAddress: configuration.Validators[idx].ValoperAddress,
+						ValoperAddress: configuration.Validators[idx].Valoper,
 						Chain:          c,
 					}
 					validators.Entries = append(validators.Entries, &validator)
@@ -146,7 +118,6 @@ func LoadConfig(configPath string) (model.Config, error) {
 			}
 			if !found {
 				return config, errors.New(fmt.Sprintf("can not find chain id specified for account %s (%s) in the config", configuration.Accounts[idx].Name, configuration.Accounts[idx].Address))
-
 			}
 		}
 

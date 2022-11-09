@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/informalsystems/stakooler/client/cosmos/api"
 	"github.com/informalsystems/stakooler/client/cosmos/model"
+	"github.com/rs/zerolog/log"
 	"github.com/schollz/progressbar/v3"
 	"sort"
 	"strconv"
@@ -13,9 +14,10 @@ import (
 
 func LoadValidatorStats(validator *model.Validator, bar *progressbar.ProgressBar) error {
 
-	// Get validators
-	validators, err := api.GetValidators(validator)
+	// Get chain validators
+	validators, err := api.GetChainValidators(validator)
 	if err != nil {
+		log.Error().Err(err).Msg("error getting validators")
 		return err
 	}
 	bar.Add(1)
@@ -33,8 +35,10 @@ func LoadValidatorStats(validator *model.Validator, bar *progressbar.ProgressBar
 	for i, val := range validators.ValidatorsResponse {
 		tokenConverted, err := strconv.ParseInt(val.Tokens[:len(val.Tokens)-validator.Chain.Exponent], 10, 64)
 		if err != nil {
-			return errors.New(fmt.Sprintf("cannot convert tokens for voting power: %s", err))
+			log.Error().Err(err).Str("validator_addr", val.OperatorAddress).Msg("cannot convert tokens for voting power")
+			return err
 		}
+
 		if strings.ToLower(val.OperatorAddress) == strings.ToLower(validator.ValoperAddress) {
 			validator.VotingPower = tokenConverted
 			validator.Ranking = i + 1
