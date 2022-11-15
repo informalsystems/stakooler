@@ -13,6 +13,8 @@ import (
 	"os"
 )
 
+var flagCsvValidatorStats *bool
+
 // represents the 'accounts details' command
 var validatorStatsCmd = &cobra.Command{
 	Use:   "stats",
@@ -21,7 +23,7 @@ var validatorStatsCmd = &cobra.Command{
 
 It shows the validator's voting power, voting power percentage, ranking, number of delegators per chain`,
 	Run: func(cmd *cobra.Command, args []string) {
-		barEnabled := !*flagCsv
+		barEnabled := !*flagCsvValidatorStats
 		config, err := config.LoadConfig(flagConfigPath)
 		if err != nil {
 			log.Fatal().Err(err).Msg("error reading configuration file")
@@ -99,7 +101,7 @@ It shows the validator's voting power, voting power percentage, ranking, number 
 		bar.Finish()
 
 		// If csv flag specified use csv output
-		if *flagCsv {
+		if *flagCsvValidatorStats {
 			// write csv file
 			display.WriteValidatorCSV(&config.Validators)
 		} else {
@@ -110,6 +112,6 @@ It shows the validator's voting power, voting power percentage, ranking, number 
 }
 
 func init() {
-	flagCsv = validatorStatsCmd.Flags().BoolP("csv", "c", false, "output the result to a csv format")
+	flagCsvValidatorStats = validatorStatsCmd.Flags().BoolP("csv", "c", false, "output the result to a csv format")
 	validatorCmd.AddCommand(validatorStatsCmd)
 }
