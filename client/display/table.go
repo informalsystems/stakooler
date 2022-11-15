@@ -75,7 +75,7 @@ func PrintValidatorStasTable(validators *model.Validators) {
 	t.SetOutputMirror(os.Stdout)
 	t.SetTitle(strings.ToUpper("Validator - Statistics"))
 	t.SetCaption(fmt.Sprintf("Retrieved information for %d validators", len(validators.Entries)))
-	t.AppendHeader(table.Row{"Moniker", "Chain", "Validator Address", "Block Time", "Block Height", "Voting Power (VP)", "VP (%)", "Ranking", "# Validators", "Delegators", "Unbondings"})
+	t.AppendHeader(table.Row{"Moniker", "Chain", "Validator Address", "Block Time", "Block Height", "Voting Power (VP)", "VP (%)", "Ranking", "Commission", "# Validators", "Delegators", "Unbondings"})
 
 	for idx := range validators.Entries {
 		validator := validators.Entries[idx]
@@ -90,6 +90,7 @@ func PrintValidatorStasTable(validators *model.Validators) {
 			p.Sprintf("%d (%s)", validator.VotingPower, validator.Chain.Denom),
 			p.Sprintf("%.2f", validator.VotingPercent),
 			p.Sprintf("%d", validator.Ranking),
+			p.Sprintf("%.2f", validator.Commission),
 			validator.NumValidators,
 			validator.NumDelegators,
 			p.Sprintf("%d (%s)", validator.Unbondings, validator.Chain.Denom),
@@ -103,9 +104,10 @@ func PrintValidatorStasTable(validators *model.Validators) {
 		{Name: "Validator Address", Align: text.AlignLeft, AlignHeader: text.AlignCenter},
 		{Name: "Block Time", Align: text.AlignLeft, AlignHeader: text.AlignCenter},
 		{Name: "Block Height", Align: text.AlignRight, AlignHeader: text.AlignCenter},
-		{Name: "Voting Power", Align: text.AlignRight, AlignHeader: text.AlignCenter},
-		{Name: "Voting Power (%)", Align: text.AlignRight, AlignHeader: text.AlignCenter},
+		{Name: "Voting Power (VP)", Align: text.AlignRight, AlignHeader: text.AlignCenter},
+		{Name: "VP (%)", Align: text.AlignRight, AlignHeader: text.AlignCenter},
 		{Name: "Ranking", Align: text.AlignRight, AlignHeader: text.AlignCenter},
+		{Name: "Commission", Align: text.AlignRight, AlignHeader: text.AlignCenter},
 		{Name: "# Validators", Align: text.AlignRight, AlignHeader: text.AlignCenter},
 		{Name: "Delegators", Align: text.AlignRight, AlignHeader: text.AlignCenter},
 		{Name: "Unbondings", Align: text.AlignRight, AlignHeader: text.AlignCenter},

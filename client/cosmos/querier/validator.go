@@ -43,7 +43,14 @@ func LoadValidatorStats(validator *model.Validator, bar *progressbar.ProgressBar
 			validator.VotingPower = tokenConverted
 			validator.Ranking = i + 1
 			validator.Moniker = val.Description.Moniker
+			commission, err := strconv.ParseFloat(val.Commission.CommissionRates.Rate, 10)
+			if err != nil {
+				log.Error().Err(err).Str("validator_addr", val.OperatorAddress).Msg("cannot convert commission rate from string to float")
+			} else {
+				validator.Commission = commission * 100.0
+			}
 		}
+
 		totalVotingPower += tokenConverted
 	}
 
