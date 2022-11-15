@@ -1,6 +1,8 @@
 package model
 
-import "time"
+import (
+	"time"
+)
 
 type Validators struct {
 	Entries []*Validator
@@ -18,4 +20,5 @@ type Validator struct {
 	NumValidators  string
 	NumDelegators  string
 	Unbondings     int64
+	Commission     float64
 }
