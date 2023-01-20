@@ -2,6 +2,8 @@ package cmd
 
 import (
 	"fmt"
+	"os"
+
 	"github.com/informalsystems/stakooler/client/cosmos/api"
 	"github.com/informalsystems/stakooler/client/cosmos/api/chain_registry"
 	"github.com/informalsystems/stakooler/client/cosmos/querier"
@@ -10,10 +12,12 @@ import (
 	"github.com/rs/zerolog/log"
 	"github.com/schollz/progressbar/v3"
 	"github.com/spf13/cobra"
-	"os"
 )
 
-var flagCsvValidatorStats *bool
+var (
+	flagCsvValidatorStats *bool
+	flagZbxValidatorStats *bool
+)
 
 // represents the 'accounts details' command
 var validatorStatsCmd = &cobra.Command{
@@ -23,11 +27,18 @@ var validatorStatsCmd = &cobra.Command{
 
 It shows the validator's voting power, voting power percentage, ranking, number of delegators per chain`,
 	Run: func(cmd *cobra.Command, args []string) {
-		barEnabled := !*flagCsvValidatorStats
+		barEnabled := !*flagCsvValidatorStats && !*flagZbxValidatorStats
 		config, err := config.LoadConfig(flagConfigPath)
 		if err != nil {
 			log.Fatal().Err(err).Msg("error reading configuration file")
 			os.Exit(1)
+		}
+
+		if *flagZbxValidatorStats {
+			if config.Zabbix.Port == "" || config.Zabbix.Host == "" {
+				log.Fatal().Err(err).Msg("zabbix output requested. missing zabbix configuration")
+				os.Exit(1)
+			}
 		}
 
 		var bar *progressbar.ProgressBar
@@ -113,5 +124,6 @@ It shows the validator's voting power, voting power percentage, ranking, number 
 
 func init() {
 	flagCsvValidatorStats = validatorStatsCmd.Flags().BoolP("csv", "c", false, "output the result to a csv format")
+	flagZbxValidatorStats = validatorStatsCmd.Flags().BoolP("zbx", "z", false, "push the result to a zabbix trapper item")
 	validatorCmd.AddCommand(validatorStatsCmd)
 }

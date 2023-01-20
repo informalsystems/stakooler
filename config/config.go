@@ -33,6 +33,7 @@ type Configuration struct {
 	Accounts   []AccountConfig
 	Validators []ValidatorsConfig
 	Chains     []ChainConfig
+	Zabbix     []model.ZabbixConfig
 }
 
 func LoadConfig(configPath string) (model.Config, error) {
@@ -119,6 +120,16 @@ func LoadConfig(configPath string) (model.Config, error) {
 			if !found {
 				return config, errors.New(fmt.Sprintf("can not find chain id specified for account %s (%s) in the config", configuration.Accounts[idx].Name, configuration.Accounts[idx].Address))
 			}
+		}
+
+		// Check zabbix config
+		if len(configuration.Zabbix) > 1 {
+			return config, errors.New(fmt.Sprintf("only one zabbix config allowed"))
+		}
+
+		for _, c := range configuration.Zabbix {
+			config.Zabbix.Host = c.Host
+			config.Zabbix.Port = c.Port
 		}
 
 		config.Accounts = accounts
