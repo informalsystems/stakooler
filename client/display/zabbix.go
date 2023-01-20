@@ -9,7 +9,7 @@ import (
 	"github.com/spf13/cast"
 )
 
-func Send(host string, port int, validators *model.Validators) {
+func ZbxSend(host string, port int, validators *model.Validators) {
 	for idx := range validators.Entries {
 		var metrics []*sender.Metric
 		validator := validators.Entries[idx]

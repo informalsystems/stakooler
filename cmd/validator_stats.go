@@ -119,7 +119,7 @@ It shows the validator's voting power, voting power percentage, ranking, number 
 			// Print table information
 			display.PrintValidatorStasTable(&config.Validators)
 		} else {
-			display.Send(config.Zabbix.Host, config.Zabbix.Port, &config.Validators)
+			display.ZbxSend(config.Zabbix.Host, config.Zabbix.Port, &config.Validators)
 		}
 	},
 }
