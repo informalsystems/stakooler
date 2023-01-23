@@ -10,9 +10,8 @@ import (
 )
 
 func ZbxSend(host string, port int, validators *model.Validators) {
-	for idx := range validators.Entries {
+	for _, validator := range validators.Entries {
 		var metrics []*sender.Metric
-		validator := validators.Entries[idx]
 
 		metrics = append(metrics, sender.NewMetric(validator.Chain.ID, "validator.stats.moniker", validator.Moniker, validator.BlockTime.Unix()))
 		metrics = append(metrics, sender.NewMetric(validator.Chain.ID, "validator.stats.valoper", validator.ValoperAddress, validator.BlockTime.Unix()))
