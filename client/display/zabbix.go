@@ -32,6 +32,6 @@ func ZbxSend(host string, port int, validators *model.Validators) {
 			log.Fatalf("Zabbix send failed: %v", err)
 		}
 
-		println(cast.ToString(resp))
+		fmt.Println(cast.ToString(resp))
 	}
 }
