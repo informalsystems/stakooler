@@ -35,7 +35,7 @@ It shows the validator's voting power, voting power percentage, ranking, number 
 		}
 
 		if *flagZbxValidatorStats {
-			if config.Zabbix.Port <= 0 || config.Zabbix.Host == "" {
+			if config.Zabbix.Port <= 0 || config.Zabbix.Port > 65535 || config.Zabbix.Host == "" {
 				log.Fatal().Err(err).Msg("zabbix output requested. missing or incorrect zabbix configuration")
 				os.Exit(1)
 			}
