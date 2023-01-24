@@ -3,6 +3,7 @@ module github.com/informalsystems/stakooler
 go 1.17
 
 require (
+	github.com/adubkov/go-zabbix v0.0.0-20170118040903-3c6a95ec4fdc
 	github.com/cosmos/cosmos-sdk v0.44.5
 	github.com/jedib0t/go-pretty/v6 v6.2.4
 	github.com/rs/zerolog v1.23.0
