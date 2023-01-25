@@ -33,7 +33,7 @@ type Configuration struct {
 	Accounts   []AccountConfig
 	Validators []ValidatorsConfig
 	Chains     []ChainConfig
-	Zabbix     []model.ZabbixConfig
+	Zabbix     model.ZabbixConfig
 }
 
 func LoadConfig(configPath string) (model.Config, error) {
@@ -122,16 +122,9 @@ func LoadConfig(configPath string) (model.Config, error) {
 			}
 		}
 
-		// Check zabbix config
-		if len(configuration.Zabbix) > 1 {
-			return config, errors.New(fmt.Sprintf("only one zabbix config allowed"))
-		}
-
-		for _, c := range configuration.Zabbix {
-			config.Zabbix.Host = c.Host
-			config.Zabbix.Port = c.Port
-		}
-
+		config.Zabbix.Host = configuration.Zabbix.Host
+		config.Zabbix.Port = configuration.Zabbix.Port
+		config.Zabbix.Server = configuration.Zabbix.Server
 		config.Accounts = accounts
 		config.Validators = validators
 		config.Chains = chains

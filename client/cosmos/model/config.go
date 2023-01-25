@@ -1,8 +1,9 @@
 package model
 
 type ZabbixConfig struct {
-	Host string
-	Port int
+	Server string
+	Port   int
+	Host   string
 }
 
 type Config struct {
