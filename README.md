@@ -43,6 +43,16 @@ chain = "[a chain id matching one from the chains section]"
 [[chains]]
 id = "[chain id]" # chain-id
 lcd = "[lcd address of the node]" # the REST endpoint of the node e.g. http://myosmonode.com:1317
+
+
+########################
+# Zabbix - enabled when running with the --zbx flag
+########################
+
+[zabbix]
+server = "[IP/URL]" # Zabbix server IP or URL
+host = "[zabbix host]" # Host defined in zabbix with a trapper item
+port = "[zabbix trapper port]" # Port used by Zabbix server for trapper items. Default 10051
 ```
 
 > the [chain id] has to match one that is available in the [Cosmos Directory](https://cosmos.directory). Select the chain, in the tab Chain look for the  Chain ID property
@@ -62,6 +72,5 @@ This will show balance, rewards, staked and unbonding tokens for each account
 In order to fetch the validator's statistics across different chains use:
 
 ```stakooler validator stats```
-
 
 > NOTE: Still Work In Progress (WIP)! First release coming soon!

@@ -9,10 +9,11 @@ import (
 	"github.com/spf13/cast"
 )
 
-func ZbxSend(host string, port int, validators *model.Validators) {
+func ZbxSend(server string, port int, host string, validators *model.Validators) {
 	for _, validator := range validators.Entries {
 		var metrics []*sender.Metric
 
+		metrics = append(metrics, sender.NewMetric(host, "validator.data.discovery", validator.Chain.ID, validator.BlockTime.Unix()))
 		metrics = append(metrics, sender.NewMetric(validator.Chain.ID, "validator.stats.moniker", validator.Moniker, validator.BlockTime.Unix()))
 		metrics = append(metrics, sender.NewMetric(validator.Chain.ID, "validator.stats.valoper", validator.ValoperAddress, validator.BlockTime.Unix()))
 		metrics = append(metrics, sender.NewMetric(validator.Chain.ID, "validator.stats.block.height", validator.BlockHeight, validator.BlockTime.Unix()))
@@ -24,7 +25,7 @@ func ZbxSend(host string, port int, validators *model.Validators) {
 		metrics = append(metrics, sender.NewMetric(validator.Chain.ID, "validator.stats.unbondings", fmt.Sprintf("%d", validator.Unbondings), validator.BlockTime.Unix()))
 
 		packet := sender.NewPacket(metrics)
-		z := sender.NewSender(host, port)
+		z := sender.NewSender(server, port)
 
 		resp, err := z.Send(packet)
 		if err != nil {
