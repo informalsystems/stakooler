@@ -33,7 +33,7 @@ chain = "[a chain id matching one from the chains section]" # this should match 
 ########################
 
 [[validators]]
-valoper = "[validator's valoper address"
+valoper = "[validator's valoper address]"
 chain = "[a chain id matching one from the chains section]"
 
 ########################

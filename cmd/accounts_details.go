@@ -10,7 +10,10 @@ import (
 	"os"
 )
 
-var flagCsv *bool
+var (
+	flagCsv            *bool
+	flagZbxAcctDetails *bool
+)
 
 // represents the 'accounts details' command
 var accountDetailsCmd = &cobra.Command{
@@ -20,7 +23,7 @@ var accountDetailsCmd = &cobra.Command{
 
 It shows tokens balance, rewards, delegation and unbonding values per account`,
 	Run: func(cmd *cobra.Command, args []string) {
-		barEnabled := !*flagCsv
+		barEnabled := !*flagCsv && !*flagZbxAcctDetails
 		config, err := config.LoadConfig(flagConfigPath)
 		if err != nil {
 			fmt.Println("error reading configuration file:", err)
@@ -33,20 +36,13 @@ It shows tokens balance, rewards, delegation and unbonding values per account`,
 			// Progress bar
 			// iterations are the api calls number times the number of accounts
 			totalIterations := len(config.Accounts.Entries) * 6
-			bar = progressbar.NewOptions(totalIterations,
-				progressbar.OptionEnableColorCodes(true),
-				progressbar.OptionShowBytes(false),
-				progressbar.OptionSetWidth(25),
-				progressbar.OptionUseANSICodes(false),
-				progressbar.OptionClearOnFinish(),
-				progressbar.OptionSetPredictTime(false),
-				progressbar.OptionSetTheme(progressbar.Theme{
-					Saucer:        "▪︎[reset]",
-					SaucerHead:    ">[reset]",
-					SaucerPadding: ".",
-					BarStart:      "[",
-					BarEnd:        "]",
-				}))
+			bar = progressbar.NewOptions(totalIterations, progressbar.OptionEnableColorCodes(true), progressbar.OptionShowBytes(false), progressbar.OptionSetWidth(25), progressbar.OptionUseANSICodes(false), progressbar.OptionClearOnFinish(), progressbar.OptionSetPredictTime(false), progressbar.OptionSetTheme(progressbar.Theme{
+				Saucer:        "▪︎[reset]",
+				SaucerHead:    ">[reset]",
+				SaucerPadding: ".",
+				BarStart:      "[",
+				BarEnd:        "]",
+			}))
 		} else {
 			bar = progressbar.New(0)
 		}
@@ -78,6 +74,8 @@ It shows tokens balance, rewards, delegation and unbonding values per account`,
 		if *flagCsv {
 			// write csv file
 			display.WriteAccountsCSV(&config.Accounts)
+		} else if *flagZbxAcctDetails {
+			display.ZbxSendAcctDetails(config.Zabbix.Server, config.Zabbix.Port, config.Zabbix.Host, &config.Accounts)
 		} else {
 			// Print table information
 			display.PrintAccountDetailsTable(&config.Accounts)
@@ -87,5 +85,6 @@ It shows tokens balance, rewards, delegation and unbonding values per account`,
 
 func init() {
 	flagCsv = accountDetailsCmd.Flags().BoolP("csv", "c", false, "output the result to a csv format")
+	flagZbxAcctDetails = accountDetailsCmd.Flags().BoolP("zbx", "z", false, "push the result to a zabbix trapper item")
 	accountsCmd.AddCommand(accountDetailsCmd)
 }
