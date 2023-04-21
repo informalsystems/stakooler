@@ -75,6 +75,9 @@ It shows tokens balance, rewards, delegation and unbonding values per account`,
 		if *flagCsv {
 			// write csv file
 			display.WriteAccountsCSV(&config.Accounts)
+		} else if *flagZbxAcctDetails {
+			display.ZbxSendChainDiscovery(&config)
+			display.ZbxSendAccountsDiscovery(&config)
 		} else {
 			// Print table information
 			display.PrintAccountDetailsTable(&config.Accounts)
