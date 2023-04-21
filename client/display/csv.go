@@ -3,10 +3,11 @@ package display
 import (
 	"encoding/csv"
 	"fmt"
-	"github.com/informalsystems/stakooler/client/cosmos/model"
 	"log"
 	"os"
 	"time"
+
+	"github.com/informalsystems/stakooler/client/cosmos/model"
 )
 
 func WriteAccountsCSV(accounts *model.Accounts) {
@@ -19,6 +20,7 @@ func WriteAccountsCSV(accounts *model.Accounts) {
 	if err := w.Write(header); err != nil {
 		log.Fatalln("error writing record to file", err)
 	}
+
 	for acctIdx := range accounts.Entries {
 		entries := accounts.Entries[acctIdx].TokensEntry
 

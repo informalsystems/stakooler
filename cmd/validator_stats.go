@@ -116,6 +116,7 @@ It shows the validator's voting power, voting power percentage, ranking, number 
 			// write csv file
 			display.WriteValidatorCSV(&config.Validators)
 		} else if *flagZbxValidatorStats {
+			display.ZbxSendChainDiscovery(&config)
 			display.ZbxSendValStats(config.Zabbix.Server, config.Zabbix.Port, config.Zabbix.Host, &config.Validators)
 		} else {
 			// Print table information

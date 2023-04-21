@@ -3,6 +3,7 @@ package display
 import (
 	"fmt"
 	"log"
+	"strings"
 	"time"
 
 	sender "github.com/adubkov/go-zabbix"
@@ -14,7 +15,6 @@ func ZbxSendValStats(server string, port int, host string, validators *model.Val
 	for _, validator := range validators.Entries {
 		var metrics []*sender.Metric
 
-		metrics = append(metrics, sender.NewMetric(host, "validator.data.discovery", validator.Chain.ID, validator.BlockTime.Unix()))
 		metrics = append(metrics, sender.NewMetric(validator.Chain.ID, "validator.stats.moniker", validator.Moniker, validator.BlockTime.Unix()))
 		metrics = append(metrics, sender.NewMetric(validator.Chain.ID, "validator.stats.valoper", validator.ValoperAddress, validator.BlockTime.Unix()))
 		metrics = append(metrics, sender.NewMetric(validator.Chain.ID, "validator.stats.block.height", validator.BlockHeight, validator.BlockTime.Unix()))
@@ -37,33 +37,35 @@ func ZbxSendValStats(server string, port int, host string, validators *model.Val
 	}
 }
 
-func ZbxSendAcctDetails(server string, port int, host string, accounts *model.Accounts) {
-	for _, account := range accounts.Entries {
-		var metrics []*sender.Metric
+func ZbxSendChainDiscovery(config *model.Config) {
+	var message []*sender.Metric
 
-		metrics = append(metrics, sender.NewMetric(host, "validator.data.discovery", account.Chain.ID, time.Now().Unix()))
-		metrics = append(metrics, sender.NewMetric(account.Chain.ID, "validator.account.name", account.Name, time.Now().Unix()))
-		metrics = append(metrics, sender.NewMetric(account.Chain.ID, "validator.account.address", account.Address, time.Now().Unix()))
-
-		for _, token := range account.TokensEntry {
-			metrics = append(metrics, sender.NewMetric(account.Chain.ID, "validator.account.balance", fmt.Sprintf("%.6f", token.Balance), time.Now().Unix()))
-			metrics = append(metrics, sender.NewMetric(account.Chain.ID, "validator.account.rewards", fmt.Sprintf("%.6f", token.Reward), time.Now().Unix()))
-			metrics = append(metrics, sender.NewMetric(account.Chain.ID, "validator.account.staked", fmt.Sprintf("%.6f", token.Delegation), time.Now().Unix()))
-			metrics = append(metrics, sender.NewMetric(account.Chain.ID, "validator.account.unbonding", fmt.Sprintf("%.6f", token.Unbonding), time.Now().Unix()))
-			metrics = append(metrics, sender.NewMetric(account.Chain.ID, "validator.account.commission", fmt.Sprintf("%.6f", token.Commission), time.Now().Unix()))
-
-			total := token.Balance + token.Reward + token.Delegation + token.Commission
-			metrics = append(metrics, sender.NewMetric(account.Chain.ID, "validator.account.total", fmt.Sprintf("%.6f", total), time.Now().Unix()))
+	data := []string{"["}
+	for idx, chain := range config.Chains.Entries {
+		if idx != len(config.Chains.Entries)-1 {
+			data = append(data, fmt.Sprintf("{\"{#CHAIN}\":\"%s\"},", chain.ID))
+		} else {
+			data = append(data, fmt.Sprintf("{\"{#CHAIN}\":\"%s\"}", chain.ID))
 		}
-
-		packet := sender.NewPacket(metrics)
-		z := sender.NewSender(server, port)
-
-		resp, err := z.Send(packet)
-		if err != nil {
-			log.Fatalf("Zabbix send failed: %v", err)
-		}
-
-		fmt.Println(cast.ToString(resp))
 	}
+	data = append(data, "]")
+
+	var builder strings.Builder
+	for _, s := range data {
+		_, err := builder.WriteString(s)
+		if err != nil {
+			log.Fatal(err)
+		}
+	}
+
+	message = append(message, sender.NewMetric(config.Zabbix.Host, "validator.data.discovery", builder.String(), time.Now().Unix()))
+	packet := sender.NewPacket(message)
+	z := sender.NewSender(config.Zabbix.Server, config.Zabbix.Port)
+
+	resp, err := z.Send(packet)
+	if err != nil {
+		log.Fatalf("Zabbix send failed: %v", err)
+	}
+
+	fmt.Println(fmt.Sprintf("Chain discovery response: %s", cast.ToString(resp)))
 }

@@ -187,9 +187,9 @@ func LoadTokenInfo(account *model.Account, bar *progressbar.ProgressBar) error {
 	return nil
 }
 
-// This function checks if the denom is for a chain (e.g. Osmosis or Sifchain)
+// GetTokenMetadata This function checks if the denom is for a chain (e.g. Osmosis or Sifchain)
 // that keeps an asset list or registry for their denominations for the IBC denoms
-// or the liquitiy pools. The function returns the UI friendly name and the exponent
+// or the liquidity pools. The function returns the UI friendly name and the exponent
 // used by the denom. If there are any errors just return the denom and 0 for
 // the precision exponent
 func GetTokenMetadata(denom string, account model.Account) TokenDetail {

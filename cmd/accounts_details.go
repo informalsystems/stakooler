@@ -2,12 +2,13 @@ package cmd
 
 import (
 	"fmt"
+	"os"
+
 	"github.com/informalsystems/stakooler/client/cosmos/querier"
 	"github.com/informalsystems/stakooler/client/display"
 	"github.com/informalsystems/stakooler/config"
 	"github.com/schollz/progressbar/v3"
 	"github.com/spf13/cobra"
-	"os"
 )
 
 var (
@@ -74,8 +75,6 @@ It shows tokens balance, rewards, delegation and unbonding values per account`,
 		if *flagCsv {
 			// write csv file
 			display.WriteAccountsCSV(&config.Accounts)
-		} else if *flagZbxAcctDetails {
-			display.ZbxSendAcctDetails(config.Zabbix.Server, config.Zabbix.Port, config.Zabbix.Host, &config.Accounts)
 		} else {
 			// Print table information
 			display.PrintAccountDetailsTable(&config.Accounts)
