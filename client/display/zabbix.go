@@ -46,7 +46,10 @@ func ZbxAccountsDetails(config *model.Config) {
 					metrics = append(metrics, sender.NewMetric(account.Chain.ID, "account.unbonding.["+account.Address+"]", fmt.Sprintf("%.2f", token.Unbonding), token.BlockTime.Unix()))
 
 				}
-				fmt.Println(fmt.Sprintf("Accounts details response: %s", SendPacket(metrics, config)))
+
+				if metrics != nil {
+					fmt.Println(fmt.Sprintf("Accounts details response: %s", SendPacket(metrics, config)))
+				}
 			}
 		}
 	}
@@ -79,7 +82,7 @@ func ZbxSendChainDiscovery(config *model.Config) {
 
 	data := []string{"["}
 	for idx, chain := range config.Chains.Entries {
-		data = append(data, fmt.Sprintf("{\"{#CHAIN}\":\"%s\"}", chain.ID))
+		data = append(data, fmt.Sprintf("\"{#CHAIN}\":\"%s\"}", chain.ID))
 		if idx != len(config.Chains.Entries)-1 {
 			data = append(data, ",")
 		}
