@@ -78,6 +78,7 @@ It shows tokens balance, rewards, delegation and unbonding values per account`,
 		} else if *flagZbxAcctDetails {
 			display.ZbxSendChainDiscovery(&config)
 			display.ZbxSendAccountsDiscovery(&config)
+			display.ZbxAccountsDetails(&config)
 		} else {
 			// Print table information
 			display.PrintAccountDetailsTable(&config.Accounts)
