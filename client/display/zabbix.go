@@ -60,7 +60,7 @@ func ZbxSendAccountsDiscovery(config *model.Config) {
 		for idx, account := range config.Accounts.Entries {
 			if chain.ID == account.Chain.ID {
 				data = append(data, fmt.Sprintf("{\"{#ACCT}\":\"%s\",\"{#ADDR}\":\"%s\"}", account.Name, account.Address))
-				if idx < len(config.Chains.Entries)-1 {
+				if idx < len(config.Accounts.Entries)-1 {
 					data = append(data, ",")
 				}
 			}
