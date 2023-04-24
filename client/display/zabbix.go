@@ -60,14 +60,13 @@ func ZbxSendAccountsDiscovery(config *model.Config) {
 		var message []*sender.Metric
 
 		data := []string{"["}
-		for idx, account := range config.Accounts.Entries {
+		for _, account := range config.Accounts.Entries {
 			if chain.ID == account.Chain.ID {
 				data = append(data, fmt.Sprintf("{\"{#ACCT}\":\"%s\",\"{#ADDR}\":\"%s\"}", account.Name, account.Address))
-				if idx < len(config.Accounts.Entries)-1 {
-					data = append(data, ",")
-				}
+				data = append(data, ",")
 			}
 		}
+		data = data[:len(data)-1] // Removing the last comma from the list as it will break Zabbix processing
 		data = append(data, "]")
 
 		if len(data) > 2 { // Only send data for chains that have accounts configured
@@ -82,7 +81,7 @@ func ZbxSendChainDiscovery(config *model.Config) {
 
 	data := []string{"["}
 	for idx, chain := range config.Chains.Entries {
-		data = append(data, fmt.Sprintf("\"{#CHAIN}\":\"%s\"}", chain.ID))
+		data = append(data, fmt.Sprintf("{\"{#CHAIN}\":\"%s\"}", chain.ID))
 		if idx != len(config.Chains.Entries)-1 {
 			data = append(data, ",")
 		}
