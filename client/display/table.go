@@ -70,7 +70,7 @@ func PrintAccountDetailsTable(accounts *model.Accounts) {
 	return
 }
 
-func PrintValidatorStasTable(validators *model.Validators) {
+func PrintValidatorStasTable(validators *model.ValidatorList) {
 	t := table.NewWriter()
 	t.SetOutputMirror(os.Stdout)
 	t.SetTitle(strings.ToUpper("Validator - Statistics"))

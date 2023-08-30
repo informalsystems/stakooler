@@ -1,10 +1,8 @@
 package model
 
-import (
-	"time"
-)
+import "time"
 
-type Validators struct {
+type ValidatorList struct {
 	Entries []*Validator
 }
 

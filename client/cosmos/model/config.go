@@ -8,7 +8,7 @@ type ZabbixConfig struct {
 
 type Config struct {
 	Accounts   Accounts
-	Validators Validators
+	Validators ValidatorList
 	Chains     Chains
 	Zabbix     ZabbixConfig
 }

@@ -58,7 +58,7 @@ func WriteAccountsCSV(accounts *model.Accounts) {
 	}
 }
 
-func WriteValidatorCSV(validators *model.Validators) {
+func WriteValidatorCSV(validators *model.ValidatorList) {
 
 	// Outputs to Stdout
 	w := csv.NewWriter(os.Stdout)
