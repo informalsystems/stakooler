@@ -21,6 +21,10 @@ type TokenDetail struct {
 	Precision int
 }
 
+func QueryAuthModule() {
+
+}
+
 func LoadTokenInfo(account *model.Account, bar *progressbar.ProgressBar) error {
 
 	var tokens []model.TokenEntry
@@ -220,7 +224,7 @@ func GetTokenMetadata(denom string, account model.Account) TokenDetail {
 			precision = 6
 		} else {
 			symbol = denomMetadata.Metadata.Display
-			precision = denomMetadata.GetExponent()
+			precision = api.GetExponent(&denomMetadata)
 		}
 
 	}
