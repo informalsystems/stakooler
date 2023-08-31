@@ -54,6 +54,33 @@ func LoadAuthData(account *model.Account) error {
 		}
 	}
 
+	for _, value := range authResponse.Account.BaseVestingAccount.DelegatedVesting {
+		metadata := GetDenomMetadata(value.Denom, *account)
+		amount, err2 := strconv.ParseFloat(value.Amount, 1)
+		if err2 != nil {
+			return errors.New(fmt.Sprintf("error converting rewards amount: %s", err2))
+		} else {
+			if amount > zeroAmount {
+				convertedAmount := amount / math.Pow10(metadata.Precision)
+				foundToken := false
+				for j := range account.TokensEntry {
+					if strings.ToLower(account.TokensEntry[j].Denom) == strings.ToLower(value.Denom) {
+						account.TokensEntry[j].DelegatedVesting += convertedAmount
+						foundToken = true
+					}
+				}
+				// If there were no tokens of this denom yet, create one
+				if !foundToken {
+					account.TokensEntry = append(account.TokensEntry, model.TokenEntry{
+						DisplayName:      metadata.Symbol,
+						Denom:            value.Denom,
+						DelegatedVesting: convertedAmount,
+					})
+				}
+			}
+		}
+	}
+
 	return nil
 }
 

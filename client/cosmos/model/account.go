@@ -18,14 +18,15 @@ type Account struct {
 }
 
 type TokenEntry struct {
-	DisplayName string
-	Denom       string
-	Balance     float64
-	Reward      float64
-	Delegation  float64
-	Unbonding   float64
-	Commission  float64
-	Vesting     float64
+	DisplayName      string
+	Denom            string
+	Balance          float64
+	Reward           float64
+	Delegation       float64
+	Unbonding        float64
+	Commission       float64
+	Vesting          float64
+	DelegatedVesting float64
 }
 
 type AuthResponse struct {
