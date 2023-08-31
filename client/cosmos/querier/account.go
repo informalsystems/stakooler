@@ -3,14 +3,15 @@ package querier
 import (
 	"errors"
 	"fmt"
+	"math"
+	"strconv"
+	"strings"
+
 	"github.com/cosmos/cosmos-sdk/types/bech32"
 	"github.com/informalsystems/stakooler/client/cosmos/api"
 	"github.com/informalsystems/stakooler/client/cosmos/api/osmosis"
 	"github.com/informalsystems/stakooler/client/cosmos/api/sifchain"
 	"github.com/informalsystems/stakooler/client/cosmos/model"
-	"math"
-	"strconv"
-	"strings"
 )
 
 const zeroAmount = 0.00000
@@ -18,6 +19,42 @@ const zeroAmount = 0.00000
 type TokenDetail struct {
 	Symbol    string
 	Precision int
+}
+
+func LoadAuthData(account *model.Account) error {
+	var authResponse model.AuthResponse
+	authResponse, err := api.GetAuth(account)
+	if err != nil {
+		return errors.New(fmt.Sprintf("failed to get auth info: %s", err))
+	}
+	for _, value := range authResponse.Account.BaseVestingAccount.OriginalVesting {
+		metadata := GetDenomMetadata(value.Denom, *account)
+		amount, err2 := strconv.ParseFloat(value.Amount, 1)
+		if err2 != nil {
+			return errors.New(fmt.Sprintf("error converting rewards amount: %s", err2))
+		} else {
+			if amount > zeroAmount {
+				convertedAmount := amount / math.Pow10(metadata.Precision)
+				foundToken := false
+				for j := range account.TokensEntry {
+					if strings.ToLower(account.TokensEntry[j].Denom) == strings.ToLower(value.Denom) {
+						account.TokensEntry[j].Vesting += convertedAmount
+						foundToken = true
+					}
+				}
+				// If there were no tokens of this denom yet, create one
+				if !foundToken {
+					account.TokensEntry = append(account.TokensEntry, model.TokenEntry{
+						DisplayName: metadata.Symbol,
+						Denom:       value.Denom,
+						Vesting:     convertedAmount,
+					})
+				}
+			}
+		}
+	}
+
+	return nil
 }
 
 func LoadBankBalances(account *model.Account) error {
@@ -57,10 +94,6 @@ func LoadBankBalances(account *model.Account) error {
 						DisplayName: metadata.Symbol,
 						Denom:       balance.Denom,
 						Balance:     convertedAmount,
-						Reward:      0,
-						Delegation:  0,
-						Unbonding:   0,
-						Commission:  0,
 					})
 				}
 			}
@@ -98,11 +131,7 @@ func LoadDistributionData(account *model.Account) error {
 					account.TokensEntry = append(account.TokensEntry, model.TokenEntry{
 						DisplayName: metadata.Symbol,
 						Denom:       reward.Denom,
-						Balance:     0,
 						Reward:      convertedAmount,
-						Delegation:  0,
-						Unbonding:   0,
-						Commission:  0,
 					})
 				}
 			}
@@ -138,10 +167,6 @@ func LoadDistributionData(account *model.Account) error {
 							account.TokensEntry = append(account.TokensEntry, model.TokenEntry{
 								DisplayName: metadata.Symbol,
 								Denom:       commission.Denom,
-								Balance:     0,
-								Reward:      0,
-								Delegation:  0,
-								Unbonding:   0,
 								Commission:  convertedAmount,
 							})
 						}
@@ -187,11 +212,7 @@ func LoadStakingData(account *model.Account) error {
 					account.TokensEntry = append(account.TokensEntry, model.TokenEntry{
 						DisplayName: metadata.Symbol,
 						Denom:       params.ParamsResponse.BondDenom,
-						Balance:     0,
-						Reward:      0,
 						Delegation:  convertedAmount,
-						Unbonding:   0,
-						Commission:  0,
 					})
 				}
 			}
@@ -224,11 +245,7 @@ func LoadStakingData(account *model.Account) error {
 						account.TokensEntry = append(account.TokensEntry, model.TokenEntry{
 							DisplayName: metadata.Symbol,
 							Denom:       params.ParamsResponse.BondDenom,
-							Balance:     0,
-							Reward:      0,
-							Delegation:  0,
 							Unbonding:   convertedAmount,
-							Commission:  0,
 						})
 					}
 				}

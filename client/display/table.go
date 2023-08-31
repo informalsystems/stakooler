@@ -17,19 +17,20 @@ func PrintAccountDetailsTable(accounts *model.Accounts) {
 	t.SetOutputMirror(os.Stdout)
 	t.SetTitle(strings.ToUpper("Accounts - Details"))
 	t.SetCaption(fmt.Sprintf("Retrieved information for %d accounts", len(accounts.Entries)))
-	t.AppendHeader(table.Row{"Name", "Account", "Token", "Balance", "Rewards", "Staked", "Unbonding", "Commissions", "Total"})
+	t.AppendHeader(table.Row{"Name", "Account", "Token", "Original Vesting", "Balance", "Rewards", "Staked", "Unbonding", "Commissions", "Total"})
 
 	for acctIdx := range accounts.Entries {
 		entries := accounts.Entries[acctIdx].TokensEntry
 		// To store the keys in slice in sorted order
 
 		for i := range accounts.Entries[acctIdx].TokensEntry {
-			total := entries[i].Balance + entries[i].Reward + entries[i].Delegation + entries[i].Unbonding + entries[i].Commission
+			total := entries[i].Vesting + entries[i].Balance + entries[i].Reward + entries[i].Delegation + entries[i].Unbonding + entries[i].Commission
 			if i == 0 {
 				t.AppendRow([]interface{}{
 					accounts.Entries[acctIdx].Name,
 					accounts.Entries[acctIdx].Address,
 					accounts.Entries[acctIdx].TokensEntry[i].DisplayName,
+					FilterZeroValue(accounts.Entries[acctIdx].TokensEntry[i].Vesting),
 					FilterZeroValue(accounts.Entries[acctIdx].TokensEntry[i].Balance),
 					FilterZeroValue(accounts.Entries[acctIdx].TokensEntry[i].Reward),
 					FilterZeroValue(accounts.Entries[acctIdx].TokensEntry[i].Delegation),
@@ -59,6 +60,7 @@ func PrintAccountDetailsTable(accounts *model.Accounts) {
 		{Name: "Name", Align: text.AlignLeft, AlignHeader: text.AlignCenter},
 		{Name: "Account", Align: text.AlignLeft, AlignHeader: text.AlignCenter},
 		{Name: "Token", Align: text.AlignLeft, AlignHeader: text.AlignCenter},
+		{Name: "Vesting", Align: text.AlignRight, AlignHeader: text.AlignCenter},
 		{Name: "Balance", Align: text.AlignRight, AlignHeader: text.AlignCenter},
 		{Name: "Rewards", Align: text.AlignRight, AlignHeader: text.AlignCenter},
 		{Name: "Staked", Align: text.AlignRight, AlignHeader: text.AlignCenter},

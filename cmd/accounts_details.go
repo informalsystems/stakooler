@@ -67,6 +67,11 @@ It shows tokens balance, rewards, delegation and unbonding values per account`,
 			acct.BlockHeight = blockInfo.Block.Header.Height
 			acct.BlockTime = blockInfo.Block.Header.Time
 
+			err = querier.LoadAuthData(acct)
+			if err != nil {
+				bar.Describe(err.Error())
+			}
+
 			err = querier.LoadBankBalances(acct)
 			if err != nil {
 				bar.Describe(err.Error())
