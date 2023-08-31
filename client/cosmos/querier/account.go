@@ -8,7 +8,6 @@ import (
 	"github.com/informalsystems/stakooler/client/cosmos/api/osmosis"
 	"github.com/informalsystems/stakooler/client/cosmos/api/sifchain"
 	"github.com/informalsystems/stakooler/client/cosmos/model"
-	"github.com/schollz/progressbar/v3"
 	"math"
 	"strconv"
 	"strings"
@@ -21,182 +20,231 @@ type TokenDetail struct {
 	Precision int
 }
 
-func QueryAuthModule() {
+func LoadBankBalances(account *model.Account) error {
 
-}
-
-func LoadTokenInfo(account *model.Account, bar *progressbar.ProgressBar) error {
-
-	var tokens []model.TokenEntry
-
-	// Get Latest Block Information
-	// Use the same block information for all the entries
-	blockResponse, err := api.GetLatestBlock(account.Chain)
-	if err != nil {
-		return errors.New(fmt.Sprintf("failed to get latest block: %s", err))
-	}
-	bar.Add(1)
-
-	// Get Balances
 	balancesResponse, err := api.GetBalances(account)
 	if err != nil {
 		return errors.New(fmt.Sprintf("failed to get balances: %s", err))
 	}
 
-	bar.Add(1)
 	for i := range balancesResponse.Balances {
 		// Skip liquidity pools and IBC tokens
 		balance := balancesResponse.Balances[i]
 		if !strings.HasPrefix(strings.ToUpper(balance.Denom), "GAMM/POOL/") &&
 			!strings.HasPrefix(strings.ToUpper(balance.Denom), "IBC/") {
 
-			metadata := GetTokenMetadata(balance.Denom, *account)
-			token := model.TokenEntry{}
-			token.DisplayName = metadata.Symbol
-			token.Denom = balance.Denom
-			token.BlockTime = blockResponse.Block.Header.Time
-			token.BlockHeight = blockResponse.Block.Header.Height
-			amount, err := strconv.ParseFloat(balance.Amount, 1)
-			if err != nil {
-				return errors.New(fmt.Sprintf("error converting balance amount: %s", err))
+			metadata := GetDenomMetadata(balance.Denom, *account)
+			amount, err2 := strconv.ParseFloat(balance.Amount, 1)
+			if err2 != nil {
+				return errors.New(fmt.Sprintf("error converting balance amount: %s", err2))
 			} else {
+				var convertedAmount float64
 				if amount > zeroAmount {
-					convertedAmount := amount / math.Pow10(metadata.Precision)
-					token.Balance = convertedAmount
-					tokens = append(tokens, token)
+					convertedAmount = amount / math.Pow10(metadata.Precision)
+				} else {
+					convertedAmount = zeroAmount
+				}
+				foundToken := false
+				for j := range account.TokensEntry {
+					if strings.ToLower(account.TokensEntry[j].Denom) == strings.ToLower(balance.Denom) {
+						account.TokensEntry[j].Balance += convertedAmount
+						foundToken = true
+					}
+				}
+				// If there were no tokens of this denom yet, create one
+				if !foundToken {
+					account.TokensEntry = append(account.TokensEntry, model.TokenEntry{
+						DisplayName: metadata.Symbol,
+						Denom:       balance.Denom,
+						Balance:     convertedAmount,
+						Reward:      0,
+						Delegation:  0,
+						Unbonding:   0,
+						Commission:  0,
+					})
 				}
 			}
 		}
 	}
 
-	// Get Rewards
+	return nil
+}
+
+func LoadDistributionData(account *model.Account) error {
+
 	rewardsResponse, err := api.GetRewards(account)
 	if err != nil {
 		return errors.New(fmt.Sprintf("failed to get rewards: %s", err))
 	}
 
-	bar.Add(1)
-	totalAmount := 0.0
 	for i := range rewardsResponse.Total {
 		reward := rewardsResponse.Total[i]
-		metadata := GetTokenMetadata(reward.Denom, *account)
-		amount, err := strconv.ParseFloat(reward.Amount, 1)
-		if err != nil {
-			return errors.New(fmt.Sprintf("error converting rewards amount: %s", err))
+		metadata := GetDenomMetadata(reward.Denom, *account)
+		amount, err2 := strconv.ParseFloat(reward.Amount, 1)
+		if err2 != nil {
+			return errors.New(fmt.Sprintf("error converting rewards amount: %s", err2))
 		} else {
 			if amount > zeroAmount {
 				convertedAmount := amount / math.Pow10(metadata.Precision)
-				totalAmount += convertedAmount
-				for i := range tokens {
-					if strings.ToLower(tokens[i].Denom) == strings.ToLower(reward.Denom) {
-						tokens[i].Reward = totalAmount
+				foundToken := false
+				for j := range account.TokensEntry {
+					if strings.ToLower(account.TokensEntry[j].Denom) == strings.ToLower(reward.Denom) {
+						account.TokensEntry[j].Reward += convertedAmount
+						foundToken = true
+					}
+				}
+				// If there were no tokens of this denom yet, create one
+				if !foundToken {
+					account.TokensEntry = append(account.TokensEntry, model.TokenEntry{
+						DisplayName: metadata.Symbol,
+						Denom:       reward.Denom,
+						Balance:     0,
+						Reward:      convertedAmount,
+						Delegation:  0,
+						Unbonding:   0,
+						Commission:  0,
+					})
+				}
+			}
+		}
+	}
+
+	validator, err := GetValidatorAccount(account)
+	if err != nil {
+		return errors.New("cannot retrieve validator account")
+	} else {
+		commissions, err2 := api.GetCommissions(account, validator)
+		if err2 != nil {
+			return errors.New(fmt.Sprintf("Failed to get commissions: %s", err2))
+		} else {
+			for i := range commissions.Commissions.Commission {
+				commission := commissions.Commissions.Commission[i]
+				metadata := GetDenomMetadata(commission.Denom, *account)
+				amount, err3 := strconv.ParseFloat(commission.Amount, 1)
+				if err3 != nil {
+					return errors.New(fmt.Sprintf("error converting commission amount: %s", err3))
+				} else {
+					if amount > zeroAmount {
+						convertedAmount := amount / math.Pow10(metadata.Precision)
+						foundToken := false
+						for j := range account.TokensEntry {
+							if strings.ToLower(account.TokensEntry[j].Denom) == strings.ToLower(commission.Denom) {
+								account.TokensEntry[j].Commission += convertedAmount
+								foundToken = true
+							}
+						}
+						// If there were no tokens of this denom yet, create one
+						if !foundToken {
+							account.TokensEntry = append(account.TokensEntry, model.TokenEntry{
+								DisplayName: metadata.Symbol,
+								Denom:       commission.Denom,
+								Balance:     0,
+								Reward:      0,
+								Delegation:  0,
+								Unbonding:   0,
+								Commission:  convertedAmount,
+							})
+						}
 					}
 				}
 			}
 		}
 	}
 
-	// Get Delegations
+	return nil
+}
+
+func LoadStakingData(account *model.Account) error {
 	delegations, err := api.GetDelegations(account)
 	if err != nil {
 		return errors.New(fmt.Sprintf("failed to get delegations: %s", err))
 	}
 
-	bar.Add(1)
-	totalAmount = 0.0
+	params, err := api.GetStakingParams(account.Chain.LCD)
+	if err != nil {
+		return errors.New(fmt.Sprintf("failed to get staking params: %s", err))
+	}
+
+	metadata := GetDenomMetadata(params.ParamsResponse.BondDenom, *account)
+
 	for i := range delegations.DelegationResponses {
 		delegation := delegations.DelegationResponses[i]
-		metadata := GetTokenMetadata(delegation.Balance.Denom, *account)
-		amount, err := strconv.ParseFloat(delegation.Balance.Amount, 1)
-		if err != nil {
-			return errors.New(fmt.Sprintf("error converting delegation amount: %s", err))
+		amount, err2 := strconv.ParseFloat(delegation.Balance.Amount, 1)
+		if err2 != nil {
+			return errors.New(fmt.Sprintf("error converting delegation amount: %s", err2))
 		} else {
 			if amount > zeroAmount {
 				convertedAmount := amount / math.Pow10(metadata.Precision)
-				totalAmount += convertedAmount
-				for i := range tokens {
-					if strings.ToLower(tokens[i].Denom) == strings.ToLower(delegation.Balance.Denom) {
-						tokens[i].Delegation = totalAmount
+				foundToken := false
+				for j := range account.TokensEntry {
+					if strings.ToLower(account.TokensEntry[j].Denom) == strings.ToLower(params.ParamsResponse.BondDenom) {
+						account.TokensEntry[j].Delegation += convertedAmount
+						foundToken = true
 					}
+				}
+
+				if !foundToken {
+					account.TokensEntry = append(account.TokensEntry, model.TokenEntry{
+						DisplayName: metadata.Symbol,
+						Denom:       params.ParamsResponse.BondDenom,
+						Balance:     0,
+						Reward:      0,
+						Delegation:  convertedAmount,
+						Unbonding:   0,
+						Commission:  0,
+					})
 				}
 			}
 		}
 	}
 
-	//Get Unbondings
 	unbondings, err := api.GetUnbondings(account)
 	if err != nil {
 		return errors.New(fmt.Sprintf("failed to get unbondings: %s", err))
 	}
 
-	bar.Add(1)
-	totalAmount = 0.0
 	for i := range unbondings.UnbondingResponses {
 		unbonding := unbondings.UnbondingResponses[i]
-		for i := range unbonding.Entries {
-			params, err := api.GetStakingParams(account.Chain.LCD)
-			if err != nil {
-				return errors.New(fmt.Sprintf("failed to get staking params: %s", err))
-			}
-			metadata := GetTokenMetadata(params.ParamsResponse.BondDenom, *account)
-			amount, err := strconv.ParseFloat(unbonding.Entries[i].Balance, 1)
-			if err != nil {
-				return errors.New(fmt.Sprintf("error converting unbonding amount: %s", err))
+		for j := range unbonding.Entries {
+			amount, err2 := strconv.ParseFloat(unbonding.Entries[j].Balance, 1)
+			if err2 != nil {
+				return errors.New(fmt.Sprintf("error converting unbonding amount: %s", err2))
 			} else {
 				if amount > zeroAmount {
 					convertedAmount := amount / math.Pow10(metadata.Precision)
-					totalAmount += convertedAmount
-					for i := range tokens {
-						if strings.ToLower(tokens[i].Denom) == strings.ToLower(params.ParamsResponse.BondDenom) {
-							tokens[i].Unbonding = totalAmount
+					foundToken := false
+					for k := range account.TokensEntry {
+						if strings.ToLower(account.TokensEntry[k].Denom) == strings.ToLower(params.ParamsResponse.BondDenom) {
+							account.TokensEntry[k].Unbonding += convertedAmount
+							foundToken = true
 						}
+					}
+
+					if !foundToken {
+						account.TokensEntry = append(account.TokensEntry, model.TokenEntry{
+							DisplayName: metadata.Symbol,
+							Denom:       params.ParamsResponse.BondDenom,
+							Balance:     0,
+							Reward:      0,
+							Delegation:  0,
+							Unbonding:   convertedAmount,
+							Commission:  0,
+						})
 					}
 				}
 			}
 		}
 	}
 
-	// Get commissions
-	totalAmount = 0.0
-	validator, err := GetValidatorAccount(account)
-	if err != nil {
-		return errors.New("cannot retrieve validator account")
-	} else {
-		commissions, err := api.GetCommissions(account, validator)
-		bar.Add(1)
-		if err != nil {
-			return errors.New(fmt.Sprintf("Failed to get commissions: %s", err))
-		} else {
-			for i := range commissions.Commissions.Commission {
-				commission := commissions.Commissions.Commission[i]
-				metadata := GetTokenMetadata(commission.Denom, *account)
-				amount, err := strconv.ParseFloat(commission.Amount, 1)
-				if err != nil {
-					return errors.New(fmt.Sprintf("error converting commission amount: %s", err))
-				} else {
-					if amount > zeroAmount {
-						convertedAmount := amount / math.Pow10(metadata.Precision)
-						totalAmount += convertedAmount
-						for i := range tokens {
-							if strings.ToLower(tokens[i].Denom) == strings.ToLower(commission.Denom) {
-								tokens[i].Commission = totalAmount
-							}
-						}
-					}
-				}
-			}
-		}
-	}
-	account.TokensEntry = tokens
 	return nil
 }
 
-// GetTokenMetadata This function checks if the denom is for a chain (e.g. Osmosis or Sifchain)
+// GetDenomMetadata This function checks if the denom is for a chain (e.g. Osmosis or Sifchain)
 // that keeps an asset list or registry for their denominations for the IBC denoms
 // or the liquidity pools. The function returns the UI friendly name and the exponent
 // used by the denom. If there are any errors just return the denom and 0 for
 // the precision exponent
-func GetTokenMetadata(denom string, account model.Account) TokenDetail {
+func GetDenomMetadata(denom string, account model.Account) TokenDetail {
 	symbol := denom
 	precision := 0
 	bech32Prefix, _, _ := bech32.DecodeAndConvert(account.Address)

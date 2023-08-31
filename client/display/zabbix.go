@@ -35,15 +35,15 @@ func ZbxAccountsDetails(config *model.Config) {
 			if chain.ID == account.Chain.ID {
 				var metrics []*sender.Metric
 				for _, token := range account.TokensEntry {
-					metrics = append(metrics, sender.NewMetric(account.Chain.ID, "account.address.["+account.Address+"]", account.Address, token.BlockTime.Unix()))
-					metrics = append(metrics, sender.NewMetric(account.Chain.ID, "account.balance.["+account.Address+"]", fmt.Sprintf("%.2f", token.Balance), token.BlockTime.Unix()))
-					metrics = append(metrics, sender.NewMetric(account.Chain.ID, "account.height.["+account.Address+"]", token.BlockHeight, token.BlockTime.Unix()))
-					metrics = append(metrics, sender.NewMetric(account.Chain.ID, "account.commission.["+account.Address+"]", fmt.Sprintf("%.2f", token.Commission), token.BlockTime.Unix()))
-					metrics = append(metrics, sender.NewMetric(account.Chain.ID, "account.denom.["+account.Address+"]", token.DisplayName, token.BlockTime.Unix()))
-					metrics = append(metrics, sender.NewMetric(account.Chain.ID, "account.name.["+account.Address+"]", account.Name, token.BlockTime.Unix()))
-					metrics = append(metrics, sender.NewMetric(account.Chain.ID, "account.rewards.["+account.Address+"]", fmt.Sprintf("%.2f", token.Reward), token.BlockTime.Unix()))
-					metrics = append(metrics, sender.NewMetric(account.Chain.ID, "account.staked.["+account.Address+"]", fmt.Sprintf("%.2f", token.Delegation), token.BlockTime.Unix()))
-					metrics = append(metrics, sender.NewMetric(account.Chain.ID, "account.unbonding.["+account.Address+"]", fmt.Sprintf("%.2f", token.Unbonding), token.BlockTime.Unix()))
+					metrics = append(metrics, sender.NewMetric(account.Chain.ID, "account.address.["+account.Address+"]", account.Address, account.BlockTime.Unix()))
+					metrics = append(metrics, sender.NewMetric(account.Chain.ID, "account.balance.["+account.Address+"]", fmt.Sprintf("%.2f", token.Balance), account.BlockTime.Unix()))
+					metrics = append(metrics, sender.NewMetric(account.Chain.ID, "account.height.["+account.Address+"]", account.BlockHeight, account.BlockTime.Unix()))
+					metrics = append(metrics, sender.NewMetric(account.Chain.ID, "account.commission.["+account.Address+"]", fmt.Sprintf("%.2f", token.Commission), account.BlockTime.Unix()))
+					metrics = append(metrics, sender.NewMetric(account.Chain.ID, "account.denom.["+account.Address+"]", token.DisplayName, account.BlockTime.Unix()))
+					metrics = append(metrics, sender.NewMetric(account.Chain.ID, "account.name.["+account.Address+"]", account.Name, account.BlockTime.Unix()))
+					metrics = append(metrics, sender.NewMetric(account.Chain.ID, "account.rewards.["+account.Address+"]", fmt.Sprintf("%.2f", token.Reward), account.BlockTime.Unix()))
+					metrics = append(metrics, sender.NewMetric(account.Chain.ID, "account.staked.["+account.Address+"]", fmt.Sprintf("%.2f", token.Delegation), account.BlockTime.Unix()))
+					metrics = append(metrics, sender.NewMetric(account.Chain.ID, "account.unbonding.["+account.Address+"]", fmt.Sprintf("%.2f", token.Unbonding), account.BlockTime.Unix()))
 
 				}
 

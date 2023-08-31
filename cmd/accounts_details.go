@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/informalsystems/stakooler/client/cosmos/api"
 	"github.com/informalsystems/stakooler/client/cosmos/querier"
 	"github.com/informalsystems/stakooler/client/display"
 	"github.com/informalsystems/stakooler/config"
@@ -56,16 +57,33 @@ It shows tokens balance, rewards, delegation and unbonding values per account`,
 				bar.Describe(fmt.Sprintf("Getting account %s details", acct.Address))
 			}
 
-			err := querier.LoadTokenInfo(acct, bar)
+			// Get latest block information to include in the account
+			blockInfo, err := api.GetLatestBlock(acct.Chain)
 			if err != nil {
-				bar.Describe(fmt.Sprintf("failed to retrieve %s details: %s", acct.Address, err))
-				//os.Exit(1)
-			} else {
-				// Don't show this if csv option enabled
-				if barEnabled {
-					bar.Describe(fmt.Sprintf("Got account %s details", acct.Address))
-				}
+				bar.Describe(fmt.Sprintf("failed to get latest block: %s", err))
 			}
+			bar.Add(1)
+
+			acct.BlockHeight = blockInfo.Block.Header.Height
+			acct.BlockTime = blockInfo.Block.Header.Time
+
+			err = querier.LoadBankBalances(acct)
+			if err != nil {
+				bar.Describe(err.Error())
+			}
+			bar.Add(1)
+
+			err = querier.LoadDistributionData(acct)
+			if err != nil {
+				bar.Describe(err.Error())
+			}
+			bar.Add(1)
+
+			err = querier.LoadStakingData(acct)
+			if err != nil {
+				bar.Describe(err.Error())
+			}
+			bar.Add(1)
 		}
 
 		// Hide bar

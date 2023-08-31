@@ -10,14 +10,14 @@ type Account struct {
 	Name        string
 	Address     string
 	Chain       Chain
+	BlockTime   time.Time
+	BlockHeight string
 	TokensEntry []TokenEntry
 }
 
 type TokenEntry struct {
 	DisplayName string
 	Denom       string
-	BlockTime   time.Time
-	BlockHeight string
 	Balance     float64
 	Reward      float64
 	Delegation  float64
