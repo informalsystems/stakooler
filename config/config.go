@@ -57,7 +57,7 @@ func LoadConfig(configPath string) (model.Config, error) {
 	config := model.Config{}
 	accounts := model.Accounts{}
 	chains := model.Chains{}
-	validators := model.Validators{}
+	validators := model.ValidatorList{}
 
 	err := viper.ReadInConfig() // Find and read the config file
 

@@ -9,32 +9,8 @@ import (
 	"strings"
 )
 
-type BalancesResponse struct {
-	Balances []struct {
-		Denom  string `json:"denom"`
-		Amount string `json:"amount"`
-	} `json:"balances"`
-	Pagination struct {
-		NextKey interface{} `json:"next_key"`
-		Total   string      `json:"total"`
-	} `json:"pagination"`
-}
-
-type DenomMetadataResponse struct {
-	Metadata struct {
-		Description string `json:"description"`
-		DenomUnits  []struct {
-			Denom    string   `json:"denom"`
-			Exponent int      `json:"exponent"`
-			Aliases  []string `json:"aliases"`
-		} `json:"denom_units"`
-		Base    string `json:"base"`
-		Display string `json:"display"`
-	} `json:"metadata"`
-}
-
-func GetBalances(account *model.Account) (BalancesResponse, error) {
-	var balanceResponse BalancesResponse
+func GetBalances(account *model.Account) (model.BalancesResponse, error) {
+	var balanceResponse model.BalancesResponse
 
 	url := account.Chain.LCD + "/cosmos/bank/v1beta1/balances/" + account.Address
 	method := "GET"
@@ -66,8 +42,8 @@ func GetBalances(account *model.Account) (BalancesResponse, error) {
 	return balanceResponse, nil
 }
 
-func GetDenomMetadata(account *model.Account, denom string) (DenomMetadataResponse, error) {
-	var denomMetadata DenomMetadataResponse
+func GetDenomMetadata(account *model.Account, denom string) (model.DenomMetadataResponse, error) {
+	var denomMetadata model.DenomMetadataResponse
 
 	url := account.Chain.LCD + "/cosmos/bank/v1beta1/denoms_metadata/" + denom
 	method := "GET"
@@ -100,7 +76,7 @@ func GetDenomMetadata(account *model.Account, denom string) (DenomMetadataRespon
 	return denomMetadata, nil
 }
 
-func (metadata *DenomMetadataResponse) GetExponent() int {
+func GetExponent(metadata *model.DenomMetadataResponse) int {
 	exponent := 0
 	for _, d := range metadata.Metadata.DenomUnits {
 		if strings.ToUpper(d.Denom) == strings.ToUpper(metadata.Metadata.Display) {
