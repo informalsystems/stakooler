@@ -2,78 +2,40 @@ package api
 
 import (
 	"encoding/json"
-	"fmt"
-	"github.com/informalsystems/stakooler/client/cosmos/model"
-	"io/ioutil"
 	"net/http"
 	"strings"
+
+	"github.com/informalsystems/stakooler/client/cosmos"
+	"github.com/informalsystems/stakooler/client/cosmos/model"
 )
 
-func GetBalances(account *model.Account) (model.BalancesResponse, error) {
-	var balanceResponse model.BalancesResponse
+func GetBalances(account *model.Account, client *http.Client) (response model.BalancesResponse, err error) {
+	var body []byte
 
 	url := account.Chain.LCD + "/cosmos/bank/v1beta1/balances/" + account.Address
-	method := "GET"
+	body, err = cosmos.HttpGet(url, client)
 
-	client := &http.Client{}
-	req, err := http.NewRequest(method, url, nil)
-
+	err = json.Unmarshal(body, &response)
 	if err != nil {
-		fmt.Println(err)
-		return balanceResponse, err
+		return
 	}
-	res, err := client.Do(req)
-	if err != nil {
-		fmt.Println(err)
-		return balanceResponse, err
-	}
-	defer res.Body.Close()
-
-	body, err := ioutil.ReadAll(res.Body)
-	if err != nil {
-		fmt.Println(err)
-		return balanceResponse, err
-	}
-	err = json.Unmarshal(body, &balanceResponse)
-	if err != nil {
-		fmt.Println(err)
-		return balanceResponse, err
-	}
-	return balanceResponse, nil
+	return
 }
 
-func GetDenomMetadata(account *model.Account, denom string) (model.DenomMetadataResponse, error) {
-	var denomMetadata model.DenomMetadataResponse
+func GetDenomMetadata(account *model.Account, denom string, client *http.Client) (response model.DenomMetadataResponse, err error) {
+	var body []byte
 
 	url := account.Chain.LCD + "/cosmos/bank/v1beta1/denoms_metadata/" + denom
-	method := "GET"
-
-	client := &http.Client{}
-	req, err := http.NewRequest(method, url, nil)
-
+	body, err = cosmos.HttpGet(url, client)
 	if err != nil {
-		fmt.Println(err)
-		return denomMetadata, err
-	}
-	res, err := client.Do(req)
-	if err != nil {
-		fmt.Println(err)
-		return denomMetadata, err
-	}
-	defer res.Body.Close()
-
-	body, err := ioutil.ReadAll(res.Body)
-	if err != nil {
-		fmt.Println(err)
-		return denomMetadata, err
-	}
-	err = json.Unmarshal(body, &denomMetadata)
-	if err != nil {
-		fmt.Println(err)
-		return denomMetadata, err
+		return
 	}
 
-	return denomMetadata, nil
+	err = json.Unmarshal(body, &response)
+	if err != nil {
+		return
+	}
+	return
 }
 
 func GetExponent(metadata *model.DenomMetadataResponse) int {

@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"github.com/informalsystems/stakooler/client/cosmos"
 	"os"
 
 	"github.com/informalsystems/stakooler/client/cosmos/api"
@@ -65,6 +66,8 @@ It shows the validator's voting power, voting power percentage, ranking, number 
 			bar = progressbar.New(0)
 		}
 
+		httpClient := cosmos.NewHttpClient()
+
 		// Load each account details
 		for _, validator := range config.Validators.Entries {
 			// Don't show this if csv option enabled
@@ -81,7 +84,7 @@ It shows the validator's voting power, voting power percentage, ranking, number 
 			}
 
 			for _, asset := range assets.Assets {
-				denom, err := api.GetStakingParams(validator.Chain.LCD)
+				denom, err := api.GetStakingParams(validator.Chain.LCD, httpClient)
 				if err != nil {
 					log.Fatal().Err(err).Str("chain", validator.Chain.ID).Msg("cannot retrieve staking params")
 					os.Exit(1)

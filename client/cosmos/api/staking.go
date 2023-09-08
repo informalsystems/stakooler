@@ -6,138 +6,56 @@ import (
 	"io"
 	"net/http"
 
+	"github.com/informalsystems/stakooler/client/cosmos"
 	"github.com/informalsystems/stakooler/client/cosmos/model"
 )
 
-func GetDelegations(account *model.Account) (model.Delegations, error) {
-	var delegations model.Delegations
+func GetDelegations(account *model.Account, client *http.Client) (response model.Delegations, err error) {
+	var body []byte
 
 	url := account.Chain.LCD + "/cosmos/staking/v1beta1/delegations/" + account.Address
-	method := "GET"
-
-	client := &http.Client{}
-	req, err := http.NewRequest(method, url, nil)
-
+	body, err = cosmos.HttpGet(url, client)
 	if err != nil {
-		fmt.Println(err)
-		return delegations, err
+		return
 	}
-	res, err := client.Do(req)
+	err = json.Unmarshal(body, &response)
 	if err != nil {
-		fmt.Println(err)
-		return delegations, err
+		return
 	}
-	defer res.Body.Close()
-
-	body, err := io.ReadAll(res.Body)
-	if err != nil {
-		fmt.Println(err)
-		return delegations, err
-	}
-	err = json.Unmarshal(body, &delegations)
-	if err != nil {
-		fmt.Println(err)
-		return delegations, err
-	}
-	return delegations, nil
+	return
 }
 
-func GetUnbondings(account *model.Account) (model.Unbondings, error) {
-	var unbondings model.Unbondings
+func GetUnbondings(account *model.Account, client *http.Client) (response model.Unbondings, err error) {
+	var body []byte
 
 	url := account.Chain.LCD + "/cosmos/staking/v1beta1/delegators/" + account.Address + "/unbonding_delegations"
-	method := "GET"
+	body, err = cosmos.HttpGet(url, client)
+	if err != nil {
+		return
+	}
 
-	client := &http.Client{}
-	req, err := http.NewRequest(method, url, nil)
-
+	err = json.Unmarshal(body, &response)
 	if err != nil {
-		fmt.Println(err)
-		return unbondings, err
+		return
 	}
-	res, err := client.Do(req)
-	if err != nil {
-		fmt.Println(err)
-		return unbondings, err
-	}
-	defer res.Body.Close()
-
-	body, err := io.ReadAll(res.Body)
-	if err != nil {
-		fmt.Println(err)
-		return unbondings, err
-	}
-	err = json.Unmarshal(body, &unbondings)
-	if err != nil {
-		fmt.Println(err)
-		return unbondings, err
-	}
-	return unbondings, nil
+	return
 }
 
-func GetStakingParams(chainEndpoint string) (model.Params, error) {
-	var params model.Params
+func GetStakingParams(chainEndpoint string, client *http.Client) (response model.Params, err error) {
+	var body []byte
 
 	url := chainEndpoint + "/cosmos/staking/v1beta1/params"
-	method := "GET"
+	body, err = cosmos.HttpGet(url, client)
+	if err != nil {
+		return
+	}
 
-	client := &http.Client{}
-	req, err := http.NewRequest(method, url, nil)
-
+	err = json.Unmarshal(body, &response)
 	if err != nil {
-		fmt.Println(err)
-		return params, err
+		return
 	}
-	res, err := client.Do(req)
-	if err != nil {
-		fmt.Println(err)
-		return params, err
-	}
-	defer res.Body.Close()
-
-	body, err := io.ReadAll(res.Body)
-	if err != nil {
-		fmt.Println(err)
-		return params, err
-	}
-	err = json.Unmarshal(body, &params)
-	if err != nil {
-		fmt.Println(err)
-		return params, err
-	}
-	return params, nil
+	return
 }
-
-//func GetValidatorSet(validator *model.Validator) (ValidatorSet, error) {
-//	var valset ValidatorSet
-//
-//	url := validator.Chain.LCD + "/cosmos/base/tendermint/v1beta1/validatorsets/latest?pagination.limit=300&pagination.count_total=true"
-//	method := "GET"
-//
-//	client := &http.Client{}
-//	req, err := http.NewRequest(method, url, nil)
-//
-//	if err != nil {
-//		return valset, err
-//	}
-//	res, err := client.Do(req)
-//	if err != nil {
-//		return valset, err
-//	}
-//	defer res.Body.Close()
-//
-//	body, err := io.ReadAll(res.Body)
-//	if err != nil {
-//		fmt.Println(err)
-//		return valset, err
-//	}
-//	err = json.Unmarshal(body, &valset)
-//	if err != nil {
-//		fmt.Println(err)
-//		return valset, err
-//	}
-//	return valset, nil
-//}
 
 func GetChainValidators(validator *model.Validator) (model.Validators, error) {
 	var validators model.Validators
