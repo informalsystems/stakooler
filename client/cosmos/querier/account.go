@@ -4,13 +4,13 @@ import (
 	"errors"
 	"fmt"
 	"math"
+	"net/http"
 	"strconv"
 	"strings"
 
 	"github.com/cosmos/cosmos-sdk/types/bech32"
 	"github.com/informalsystems/stakooler/client/cosmos/api"
 	"github.com/informalsystems/stakooler/client/cosmos/api/osmosis"
-	"github.com/informalsystems/stakooler/client/cosmos/api/sifchain"
 	"github.com/informalsystems/stakooler/client/cosmos/model"
 )
 
@@ -21,14 +21,14 @@ type TokenDetail struct {
 	Precision int
 }
 
-func LoadAuthData(account *model.Account) error {
+func LoadAuthData(account *model.Account, client *http.Client) error {
 	var authResponse model.AuthResponse
-	authResponse, err := api.GetAuth(account)
+	authResponse, err := api.GetAuth(account, client)
 	if err != nil {
 		return errors.New(fmt.Sprintf("failed to get auth info: %s", err))
 	}
 	for _, value := range authResponse.Account.BaseVestingAccount.OriginalVesting {
-		metadata := GetDenomMetadata(value.Denom, *account)
+		metadata := GetDenomMetadata(value.Denom, *account, client)
 		amount, err2 := strconv.ParseFloat(value.Amount, 1)
 		if err2 != nil {
 			return errors.New(fmt.Sprintf("error converting rewards amount: %s", err2))
@@ -55,7 +55,7 @@ func LoadAuthData(account *model.Account) error {
 	}
 
 	for _, value := range authResponse.Account.BaseVestingAccount.DelegatedVesting {
-		metadata := GetDenomMetadata(value.Denom, *account)
+		metadata := GetDenomMetadata(value.Denom, *account, client)
 		amount, err2 := strconv.ParseFloat(value.Amount, 1)
 		if err2 != nil {
 			return errors.New(fmt.Sprintf("error converting rewards amount: %s", err2))
@@ -84,9 +84,8 @@ func LoadAuthData(account *model.Account) error {
 	return nil
 }
 
-func LoadBankBalances(account *model.Account) error {
-
-	balancesResponse, err := api.GetBalances(account)
+func LoadBankBalances(account *model.Account, client *http.Client) error {
+	balancesResponse, err := api.GetBalances(account, client)
 	if err != nil {
 		return errors.New(fmt.Sprintf("failed to get balances: %s", err))
 	}
@@ -97,7 +96,7 @@ func LoadBankBalances(account *model.Account) error {
 		if !strings.HasPrefix(strings.ToUpper(balance.Denom), "GAMM/POOL/") &&
 			!strings.HasPrefix(strings.ToUpper(balance.Denom), "IBC/") {
 
-			metadata := GetDenomMetadata(balance.Denom, *account)
+			metadata := GetDenomMetadata(balance.Denom, *account, client)
 			amount, err2 := strconv.ParseFloat(balance.Amount, 1)
 			if err2 != nil {
 				return errors.New(fmt.Sprintf("error converting balance amount: %s", err2))
@@ -130,16 +129,15 @@ func LoadBankBalances(account *model.Account) error {
 	return nil
 }
 
-func LoadDistributionData(account *model.Account) error {
-
-	rewardsResponse, err := api.GetRewards(account)
+func LoadDistributionData(account *model.Account, client *http.Client) error {
+	rewardsResponse, err := api.GetRewards(account, client)
 	if err != nil {
 		return errors.New(fmt.Sprintf("failed to get rewards: %s", err))
 	}
 
 	for i := range rewardsResponse.Total {
 		reward := rewardsResponse.Total[i]
-		metadata := GetDenomMetadata(reward.Denom, *account)
+		metadata := GetDenomMetadata(reward.Denom, *account, client)
 		amount, err2 := strconv.ParseFloat(reward.Amount, 1)
 		if err2 != nil {
 			return errors.New(fmt.Sprintf("error converting rewards amount: %s", err2))
@@ -169,13 +167,13 @@ func LoadDistributionData(account *model.Account) error {
 	if err != nil {
 		return errors.New("cannot retrieve validator account")
 	} else {
-		commissions, err2 := api.GetCommissions(account, validator)
+		commissions, err2 := api.GetCommissions(account, validator, client)
 		if err2 != nil {
 			return errors.New(fmt.Sprintf("Failed to get commissions: %s", err2))
 		} else {
 			for i := range commissions.Commissions.Commission {
 				commission := commissions.Commissions.Commission[i]
-				metadata := GetDenomMetadata(commission.Denom, *account)
+				metadata := GetDenomMetadata(commission.Denom, *account, client)
 				amount, err3 := strconv.ParseFloat(commission.Amount, 1)
 				if err3 != nil {
 					return errors.New(fmt.Sprintf("error converting commission amount: %s", err3))
@@ -206,18 +204,18 @@ func LoadDistributionData(account *model.Account) error {
 	return nil
 }
 
-func LoadStakingData(account *model.Account) error {
-	delegations, err := api.GetDelegations(account)
+func LoadStakingData(account *model.Account, client *http.Client) error {
+	delegations, err := api.GetDelegations(account, client)
 	if err != nil {
 		return errors.New(fmt.Sprintf("failed to get delegations: %s", err))
 	}
 
-	params, err := api.GetStakingParams(account.Chain.LCD)
+	params, err := api.GetStakingParams(account.Chain.LCD, client)
 	if err != nil {
 		return errors.New(fmt.Sprintf("failed to get staking params: %s", err))
 	}
 
-	metadata := GetDenomMetadata(params.ParamsResponse.BondDenom, *account)
+	metadata := GetDenomMetadata(params.ParamsResponse.BondDenom, *account, client)
 
 	for i := range delegations.DelegationResponses {
 		delegation := delegations.DelegationResponses[i]
@@ -246,7 +244,7 @@ func LoadStakingData(account *model.Account) error {
 		}
 	}
 
-	unbondings, err := api.GetUnbondings(account)
+	unbondings, err := api.GetUnbondings(account, client)
 	if err != nil {
 		return errors.New(fmt.Sprintf("failed to get unbondings: %s", err))
 	}
@@ -288,7 +286,7 @@ func LoadStakingData(account *model.Account) error {
 // or the liquidity pools. The function returns the UI friendly name and the exponent
 // used by the denom. If there are any errors just return the denom and 0 for
 // the precision exponent
-func GetDenomMetadata(denom string, account model.Account) TokenDetail {
+func GetDenomMetadata(denom string, account model.Account, client *http.Client) TokenDetail {
 	symbol := denom
 	precision := 0
 	bech32Prefix, _, _ := bech32.DecodeAndConvert(account.Address)
@@ -300,16 +298,12 @@ func GetDenomMetadata(denom string, account model.Account) TokenDetail {
 		// TODO: Don't fetch this for every account
 		list, _ := osmosis.GetAssetsList()
 		symbol, precision = list.GetSymbolExponent(denom)
-	} else if strings.ToLower(bech32Prefix) == "sif" {
-		// TODO: Don't fetch this for every account
-		tokenList, _ := sifchain.GetTokenList()
-		symbol, precision = tokenList.GetSymbolExponent(denom)
 	} else {
 		// Try to get the denometadata from the chain
 		//if strings.Contains(denom, "ibc/") {
 		//	denomM
 		//}
-		denomMetadata, _ := api.GetDenomMetadata(&account, denom)
+		denomMetadata, _ := api.GetDenomMetadata(&account, denom, client)
 		// In case no denom metadata is available just use the denom - 'u' and precision 6
 		if denomMetadata.Metadata.Base == "" {
 			symbol = strings.ToUpper(denom[1:])

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/informalsystems/stakooler/client/cosmos"
 	"github.com/informalsystems/stakooler/client/cosmos/api"
 	"github.com/informalsystems/stakooler/client/cosmos/querier"
 	"github.com/informalsystems/stakooler/client/display"
@@ -49,6 +50,8 @@ It shows tokens balance, rewards, delegation and unbonding values per account`,
 			bar = progressbar.New(0)
 		}
 
+		httpClient := cosmos.NewHttpClient()
+
 		// Load each account details
 		for _, acct := range config.Accounts.Entries {
 
@@ -58,7 +61,7 @@ It shows tokens balance, rewards, delegation and unbonding values per account`,
 			}
 
 			// Get latest block information to include in the account
-			blockInfo, err := api.GetLatestBlock(acct.Chain)
+			blockInfo, err := api.GetLatestBlock(acct.Chain, httpClient)
 			if err != nil {
 				bar.Describe(fmt.Sprintf("failed to get latest block: %s", err))
 			}
@@ -67,24 +70,24 @@ It shows tokens balance, rewards, delegation and unbonding values per account`,
 			acct.BlockHeight = blockInfo.Block.Header.Height
 			acct.BlockTime = blockInfo.Block.Header.Time
 
-			err = querier.LoadAuthData(acct)
+			err = querier.LoadAuthData(acct, httpClient)
 			if err != nil {
 				bar.Describe(err.Error())
 			}
 
-			err = querier.LoadBankBalances(acct)
-			if err != nil {
-				bar.Describe(err.Error())
-			}
-			bar.Add(1)
-
-			err = querier.LoadDistributionData(acct)
+			err = querier.LoadBankBalances(acct, httpClient)
 			if err != nil {
 				bar.Describe(err.Error())
 			}
 			bar.Add(1)
 
-			err = querier.LoadStakingData(acct)
+			err = querier.LoadDistributionData(acct, httpClient)
+			if err != nil {
+				bar.Describe(err.Error())
+			}
+			bar.Add(1)
+
+			err = querier.LoadStakingData(acct, httpClient)
 			if err != nil {
 				bar.Describe(err.Error())
 			}
