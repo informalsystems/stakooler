@@ -91,37 +91,38 @@ func LoadBankBalances(account *model.Account, client *http.Client) error {
 	}
 
 	for i := range balancesResponse.Balances {
-		// Skip liquidity pools and IBC tokens
 		balance := balancesResponse.Balances[i]
-		if !strings.HasPrefix(strings.ToUpper(balance.Denom), "GAMM/POOL/") &&
-			!strings.HasPrefix(strings.ToUpper(balance.Denom), "BC/") {
+		// Skip liquidity pools and IBC tokens
+		if strings.HasPrefix(strings.ToUpper(balance.Denom), "GAMM/POOL/") ||
+			strings.HasPrefix(strings.ToUpper(balance.Denom), "IBC/") {
+			continue
+		}
 
-			metadata := GetDenomMetadata(balance.Denom, *account, client)
-			amount, err2 := strconv.ParseFloat(balance.Amount, 1)
-			if err2 != nil {
-				return errors.New(fmt.Sprintf("error converting balance amount: %s", err2))
+		metadata := GetDenomMetadata(balance.Denom, *account, client)
+		amount, err2 := strconv.ParseFloat(balance.Amount, 1)
+		if err2 != nil {
+			return errors.New(fmt.Sprintf("error converting balance amount: %s", err2))
+		} else {
+			var convertedAmount float64
+			if amount > zeroAmount {
+				convertedAmount = amount / math.Pow10(metadata.Precision)
 			} else {
-				var convertedAmount float64
-				if amount > zeroAmount {
-					convertedAmount = amount / math.Pow10(metadata.Precision)
-				} else {
-					convertedAmount = zeroAmount
+				convertedAmount = zeroAmount
+			}
+			foundToken := false
+			for j := range account.TokensEntry {
+				if strings.ToLower(account.TokensEntry[j].Denom) == strings.ToLower(balance.Denom) {
+					account.TokensEntry[j].Balance += convertedAmount
+					foundToken = true
 				}
-				foundToken := false
-				for j := range account.TokensEntry {
-					if strings.ToLower(account.TokensEntry[j].Denom) == strings.ToLower(balance.Denom) {
-						account.TokensEntry[j].Balance += convertedAmount
-						foundToken = true
-					}
-				}
-				// If there were no tokens of this denom yet, create one
-				if !foundToken {
-					account.TokensEntry = append(account.TokensEntry, model.TokenEntry{
-						DisplayName: metadata.Symbol,
-						Denom:       balance.Denom,
-						Balance:     convertedAmount,
-					})
-				}
+			}
+			// If there were no tokens of this denom yet, create one
+			if !foundToken {
+				account.TokensEntry = append(account.TokensEntry, model.TokenEntry{
+					DisplayName: metadata.Symbol,
+					Denom:       balance.Denom,
+					Balance:     convertedAmount,
+				})
 			}
 		}
 	}
@@ -138,6 +139,13 @@ func LoadDistributionData(account *model.Account, client *http.Client) error {
 	for i := range rewardsResponse.Total {
 		reward := rewardsResponse.Total[i]
 		metadata := GetDenomMetadata(reward.Denom, *account, client)
+
+		// Skip liquidity pools and IBC tokens
+		if strings.HasPrefix(strings.ToUpper(reward.Denom), "GAMM/POOL/") ||
+			strings.HasPrefix(strings.ToUpper(reward.Denom), "IBC/") {
+			continue
+		}
+
 		amount, err2 := strconv.ParseFloat(reward.Amount, 1)
 		if err2 != nil {
 			return errors.New(fmt.Sprintf("error converting rewards amount: %s", err2))
