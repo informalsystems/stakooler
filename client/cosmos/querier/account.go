@@ -182,6 +182,13 @@ func LoadDistributionData(account *model.Account, client *http.Client) error {
 			for i := range commissions.Commissions.Commission {
 				commission := commissions.Commissions.Commission[i]
 				metadata := GetDenomMetadata(commission.Denom, *account, client)
+
+				// Skip liquidity pools and IBC tokens
+				if strings.HasPrefix(strings.ToUpper(commission.Denom), "GAMM/POOL/") ||
+					strings.HasPrefix(strings.ToUpper(commission.Denom), "IBC/") {
+					continue
+				}
+
 				amount, err3 := strconv.ParseFloat(commission.Amount, 1)
 				if err3 != nil {
 					return errors.New(fmt.Sprintf("error converting commission amount: %s", err3))
