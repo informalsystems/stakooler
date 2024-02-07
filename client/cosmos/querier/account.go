@@ -94,7 +94,7 @@ func LoadBankBalances(account *model.Account, client *http.Client) error {
 		// Skip liquidity pools and IBC tokens
 		balance := balancesResponse.Balances[i]
 		if !strings.HasPrefix(strings.ToUpper(balance.Denom), "GAMM/POOL/") &&
-			!strings.HasPrefix(strings.ToUpper(balance.Denom), "IBC/") {
+			!strings.HasPrefix(strings.ToUpper(balance.Denom), "BC/") {
 
 			metadata := GetDenomMetadata(balance.Denom, *account, client)
 			amount, err2 := strconv.ParseFloat(balance.Amount, 1)
