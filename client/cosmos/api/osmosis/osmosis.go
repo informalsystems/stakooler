@@ -39,7 +39,7 @@ type OsmosisAssetsList struct {
 func GetAssetsList() (OsmosisAssetsList, error) {
 
 	assetsList := OsmosisAssetsList{}
-	url := "https://raw.githubusercontent.com/osmosis-labs/assetlists/main/osmosis-1/osmosis-1.assetlist.json"
+	url := "https://raw.githubusercontent.com/osmosis-labs/assetlists/main/osmosis-1/osmosis-1.chainlist.json"
 	method := "GET"
 
 	client := &http.Client{}
