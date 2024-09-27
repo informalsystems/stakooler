@@ -225,7 +225,7 @@ func LoadStakingData(account *model.Account, client *http.Client) error {
 		return errors.New(fmt.Sprintf("failed to get delegations: %s", err))
 	}
 
-	params, err := api.GetStakingParams(account.Chain.LCD, client)
+	params, err := api.GetStakingParams(account.Chain.RestEndpoint, client)
 	if err != nil {
 		return errors.New(fmt.Sprintf("failed to get staking params: %s", err))
 	}

@@ -39,7 +39,7 @@ func WriteAccountsCSV(accounts *model.Accounts) {
 				record := []string{
 					accounts.Entries[acctIdx].Name,
 					accounts.Entries[acctIdx].Address,
-					accounts.Entries[acctIdx].Chain.ID,
+					accounts.Entries[acctIdx].Chain.Id,
 					accounts.Entries[acctIdx].BlockHeight,
 					accounts.Entries[acctIdx].BlockTime.Format(time.RFC3339Nano),
 					accounts.Entries[acctIdx].TokensEntry[i].DisplayName,
@@ -75,7 +75,7 @@ func WriteValidatorCSV(validators *model.ValidatorList) {
 
 		record := []string{
 			validator.Moniker,
-			validator.Chain.ID,
+			validator.Chain.Id,
 			validator.ValoperAddress,
 			validator.BlockTime.Format(time.RFC822),
 			validator.BlockHeight,

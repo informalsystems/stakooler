@@ -3,11 +3,15 @@ package config
 import (
 	"errors"
 	"fmt"
+	"github.com/cosmos/cosmos-sdk/types/bech32"
 	_ "github.com/cosmos/cosmos-sdk/types/bech32"
+	"github.com/informalsystems/stakooler/client/cosmos/api"
 	"github.com/informalsystems/stakooler/client/cosmos/model"
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/viper"
+	"net/http"
 	"path/filepath"
+	"slices"
 	"strings"
 )
 
@@ -34,6 +38,72 @@ type Configuration struct {
 	Validators []ValidatorsConfig
 	Chains     []ChainConfig
 	Zabbix     model.ZabbixConfig
+}
+
+func ReadAccountData(path string) (*model.RawAccountData, error) {
+	var rawAcctData model.RawAccountData
+	if path != "" {
+		cleanPath := filepath.Join(path)
+		fileName := filepath.Base(cleanPath)
+		ext := filepath.Ext(fileName)
+		trimmedName := strings.TrimSuffix(fileName, ext)
+		filePath := filepath.Dir(cleanPath)
+		viper.SetConfigName(trimmedName)
+		viper.SetConfigType(strings.Replace(ext, ".", "", 1))
+		viper.AddConfigPath(filePath)
+	} else {
+		viper.SetConfigName("accounts")
+		viper.SetConfigType("json")
+		viper.AddConfigPath("$HOME/.stakooler")
+		viper.AddConfigPath(".")
+	}
+
+	if err := viper.ReadInConfig(); err != nil {
+		log.Error().Err(err).Msg("error reading file")
+		return nil, err
+	} else {
+		if err = viper.Unmarshal(&rawAcctData); err != nil {
+			log.Error().Err(err).Msg("cannot unmarshall account data file")
+			return nil, err
+		}
+	}
+	return &rawAcctData, nil
+}
+
+func ParseChainConfig(data *model.RawAccountData, httpClient *http.Client) []model.Chain {
+	var chains []model.Chain
+	for _, chain := range data.Chains {
+		chainData := model.Chain{
+			Name:         chain.Name,
+			Id:           chain.Id,
+			RestEndpoint: chain.Rest,
+		}
+
+		if prefix, err := api.GetPrefix(chainData.RestEndpoint, httpClient); err != nil {
+			log.Error().Err(err).Msg(fmt.Sprintf("cannot get chain prefix, skipping chain %s", chainData.Id))
+			continue
+		} else {
+			chainData.Bech32Prefix = prefix.Bech32Prefix
+		}
+
+		for _, acct := range data.Accounts {
+			acctIndex := slices.IndexFunc(chain.Accounts, func(c string) bool { return c == acct.Name })
+
+			if acctIndex != -1 {
+				if encodedAddr, err := bech32.ConvertAndEncode(chainData.Bech32Prefix, []byte(acct.Address)); err != nil {
+					log.Error().Err(err).Msg("cannot bech32 encode address, skipping account")
+					continue
+				} else {
+					chainData.Accounts = append(chainData.Accounts, model.Account{
+						Name:    acct.Name,
+						Address: encodedAddr,
+					})
+				}
+			}
+		}
+		chains = append(chains, chainData)
+	}
+	return chains
 }
 
 func LoadConfig(configPath string) (model.Config, error) {
@@ -75,10 +145,10 @@ func LoadConfig(configPath string) (model.Config, error) {
 		// Iterate through chains in the configuration file
 		for chIdx := range configuration.Chains {
 			chain := model.Chain{
-				ID:       configuration.Chains[chIdx].ID,
-				LCD:      configuration.Chains[chIdx].LCD,
-				Denom:    configuration.Chains[chIdx].Denom,
-				Exponent: configuration.Chains[chIdx].Exponent,
+				Id:           configuration.Chains[chIdx].ID,
+				RestEndpoint: configuration.Chains[chIdx].LCD,
+				Denom:        configuration.Chains[chIdx].Denom,
+				Exponent:     configuration.Chains[chIdx].Exponent,
 			}
 			chains.Entries = append(chains.Entries, chain)
 		}
@@ -87,7 +157,7 @@ func LoadConfig(configPath string) (model.Config, error) {
 		for accIdx := range configuration.Accounts {
 			found := false
 			for _, c := range chains.Entries {
-				if strings.ToUpper(c.ID) == strings.ToUpper(configuration.Accounts[accIdx].Chain) {
+				if strings.ToUpper(c.Id) == strings.ToUpper(configuration.Accounts[accIdx].Chain) {
 					account := model.Account{
 						Name:    configuration.Accounts[accIdx].Name,
 						Address: configuration.Accounts[accIdx].Address,
@@ -107,7 +177,7 @@ func LoadConfig(configPath string) (model.Config, error) {
 		for idx := range configuration.Validators {
 			found := false
 			for _, c := range chains.Entries {
-				if strings.ToUpper(c.ID) == strings.ToUpper(configuration.Validators[idx].Chain) {
+				if strings.ToUpper(c.Id) == strings.ToUpper(configuration.Validators[idx].Chain) {
 					validator := model.Validator{
 						ValoperAddress: configuration.Validators[idx].Valoper,
 						Chain:          c,

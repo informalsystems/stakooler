@@ -89,7 +89,7 @@ func PrintValidatorStasTable(validators *model.ValidatorList) {
 
 		t.AppendRow([]interface{}{
 			validator.Moniker,
-			validator.Chain.ID,
+			validator.Chain.Id,
 			validator.ValoperAddress,
 			validator.BlockTime.Format(time.RFC822),
 			validator.BlockHeight,

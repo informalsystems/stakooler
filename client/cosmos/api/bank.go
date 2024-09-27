@@ -12,7 +12,7 @@ import (
 func GetBalances(account *model.Account, client *http.Client) (response model.BalancesResponse, err error) {
 	var body []byte
 
-	url := account.Chain.LCD + "/cosmos/bank/v1beta1/balances/" + account.Address
+	url := account.Chain.RestEndpoint + "/cosmos/bank/v1beta1/balances/" + account.Address
 	body, err = cosmos.HttpGet(url, client)
 
 	err = json.Unmarshal(body, &response)
@@ -25,7 +25,7 @@ func GetBalances(account *model.Account, client *http.Client) (response model.Ba
 func GetDenomMetadata(account *model.Account, denom string, client *http.Client) (response model.DenomMetadataResponse, err error) {
 	var body []byte
 
-	url := account.Chain.LCD + "/cosmos/bank/v1beta1/denoms_metadata/" + denom
+	url := account.Chain.RestEndpoint + "/cosmos/bank/v1beta1/denoms_metadata/" + denom
 	body, err = cosmos.HttpGet(url, client)
 	if err != nil {
 		return

@@ -12,7 +12,7 @@ import (
 func GetLatestBlock(chain model.Chain, client *http.Client) (response model.BlockResponse, err error) {
 	var body []byte
 
-	url := chain.LCD + "/cosmos/base/tendermint/v1beta1/blocks/latest"
+	url := chain.RestEndpoint + "/cosmos/base/tendermint/v1beta1/blocks/latest"
 	body, err = cosmos.HttpGet(url, client)
 	if err != nil {
 		return
@@ -28,7 +28,7 @@ func GetLatestBlock(chain model.Chain, client *http.Client) (response model.Bloc
 func GetBlock(height string, chain model.Chain) (model.BlockResponse, error) {
 	var response model.BlockResponse
 
-	url := chain.LCD + "/cosmos/base/tendermint/v1beta1/blocks/" + height
+	url := chain.RestEndpoint + "/cosmos/base/tendermint/v1beta1/blocks/" + height
 	method := "GET"
 
 	client := &http.Client{}

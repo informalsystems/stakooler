@@ -2,13 +2,12 @@ package cmd
 
 import (
 	"fmt"
-	"os"
-
 	"github.com/informalsystems/stakooler/client/cosmos"
 	"github.com/informalsystems/stakooler/client/cosmos/api"
 	"github.com/informalsystems/stakooler/client/cosmos/querier"
 	"github.com/informalsystems/stakooler/client/display"
 	"github.com/informalsystems/stakooler/config"
+	"github.com/rs/zerolog/log"
 	"github.com/schollz/progressbar/v3"
 	"github.com/spf13/cobra"
 )
@@ -27,10 +26,15 @@ var accountDetailsCmd = &cobra.Command{
 It shows tokens balance, rewards, delegation and unbonding values per account`,
 	Run: func(cmd *cobra.Command, args []string) {
 		barEnabled := !*flagCsv && !*flagZbxAcctDetails
-		config, err := config.LoadConfig(flagConfigPath)
+		tomlConfig, err := config.LoadConfig(flagConfigPath)
 		if err != nil {
-			fmt.Println("error reading configuration file:", err)
-			os.Exit(1)
+			log.Fatal().Err(err).Msg("error reading configuration file:")
+		}
+
+		// Load account data
+		rawAcctData, err := config.ReadAccountData("")
+		if err != nil {
+			log.Fatal().Err(err).Msg("error reading account data file")
 		}
 
 		var bar *progressbar.ProgressBar
@@ -38,7 +42,7 @@ It shows tokens balance, rewards, delegation and unbonding values per account`,
 		if barEnabled {
 			// Progress bar
 			// iterations are the api calls number times the number of accounts
-			totalIterations := len(config.Accounts.Entries) * 6
+			totalIterations := len(tomlConfig.Accounts.Entries) * 6
 			bar = progressbar.NewOptions(totalIterations, progressbar.OptionEnableColorCodes(true), progressbar.OptionShowBytes(false), progressbar.OptionSetWidth(25), progressbar.OptionUseANSICodes(false), progressbar.OptionClearOnFinish(), progressbar.OptionSetPredictTime(false), progressbar.OptionSetTheme(progressbar.Theme{
 				Saucer:        "▪︎[reset]",
 				SaucerHead:    ">[reset]",
@@ -51,9 +55,18 @@ It shows tokens balance, rewards, delegation and unbonding values per account`,
 		}
 
 		httpClient := cosmos.NewHttpClient()
+		chains := config.ParseChainConfig(rawAcctData, httpClient)
+
+		for _, chain := range chains {
+			for _, account := range chain.Accounts {
+				if barEnabled {
+					bar.Describe(fmt.Sprintf("Getting account %s details", account.Name))
+				}
+			}
+		}
 
 		// Load each account details
-		for _, acct := range config.Accounts.Entries {
+		for _, acct := range tomlConfig.Accounts.Entries {
 
 			// Don't show this if csv option enabled
 			if barEnabled {
@@ -100,14 +113,14 @@ It shows tokens balance, rewards, delegation and unbonding values per account`,
 		// If csv flag specified use csv output
 		if *flagCsv {
 			// write csv file
-			display.WriteAccountsCSV(&config.Accounts)
+			display.WriteAccountsCSV(&tomlConfig.Accounts)
 		} else if *flagZbxAcctDetails {
-			display.ZbxSendChainDiscovery(&config)
-			display.ZbxSendAccountsDiscovery(&config)
-			display.ZbxAccountsDetails(&config)
+			display.ZbxSendChainDiscovery(&tomlConfig)
+			display.ZbxSendAccountsDiscovery(&tomlConfig)
+			display.ZbxAccountsDetails(&tomlConfig)
 		} else {
 			// Print table information
-			display.PrintAccountDetailsTable(&config.Accounts)
+			display.PrintAccountDetailsTable(&tomlConfig.Accounts)
 		}
 	},
 }

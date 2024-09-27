@@ -1,6 +1,6 @@
 module github.com/informalsystems/stakooler
 
-go 1.17
+go 1.22
 
 require (
 	github.com/adubkov/go-zabbix v0.0.0-20170118040903-3c6a95ec4fdc

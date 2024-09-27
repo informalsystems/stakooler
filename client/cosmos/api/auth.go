@@ -8,10 +8,10 @@ import (
 	"github.com/informalsystems/stakooler/client/cosmos/model"
 )
 
-func GetAuth(account *model.Account, client *http.Client) (response model.AuthResponse, err error) {
+func GetPrefix(endpointURL string, client *http.Client) (response model.Bech32PrefixResponse, err error) {
 	var body []byte
 
-	url := account.Chain.RestEndpoint + "/cosmos/auth/v1beta1/accounts/" + account.Address
+	url := endpointURL + "/cosmos/auth/v1beta1/bech32"
 	body, err = cosmos.HttpGet(url, client)
 	if err != nil {
 		return
