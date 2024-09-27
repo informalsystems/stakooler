@@ -6,7 +6,6 @@ import (
 	"os"
 
 	"github.com/informalsystems/stakooler/client/cosmos/api"
-	"github.com/informalsystems/stakooler/client/cosmos/api/chain_registry"
 	"github.com/informalsystems/stakooler/client/cosmos/querier"
 	"github.com/informalsystems/stakooler/client/display"
 	"github.com/informalsystems/stakooler/config"
@@ -77,7 +76,7 @@ It shows the validator's voting power, voting power percentage, ranking, number 
 
 			// Load assets list
 			// Get Assets list for the chain
-			assets, err := chain_registry.GetAssetsList(validator.Chain.Id)
+			assets, err := api.GetAssetsList(validator.Chain.Id, httpClient)
 			if err != nil {
 				log.Fatal().Err(err).Str("chain", validator.Chain.Id).Msg("cannot retrieve assets list")
 				os.Exit(1)

@@ -2,11 +2,13 @@ package cmd
 
 import (
 	"fmt"
+
 	"github.com/informalsystems/stakooler/client/cosmos"
 	"github.com/informalsystems/stakooler/client/cosmos/api"
 	"github.com/informalsystems/stakooler/client/cosmos/querier"
 	"github.com/informalsystems/stakooler/client/display"
 	"github.com/informalsystems/stakooler/config"
+
 	"github.com/rs/zerolog/log"
 	"github.com/schollz/progressbar/v3"
 	"github.com/spf13/cobra"
@@ -58,53 +60,46 @@ It shows tokens balance, rewards, delegation and unbonding values per account`,
 		chains := config.ParseChainConfig(rawAcctData, httpClient)
 
 		for _, chain := range chains {
+			chain.AssetList, err = api.GetAssetsList(chain.Name, httpClient)
+			if err != nil {
+				log.Error().Err(err).Msg("error getting asset list")
+			}
+
+			blockInfo, err := api.GetLatestBlock(chain.RestEndpoint, httpClient)
+			if err != nil {
+				log.Error().Err(err).Msg(fmt.Sprintf("failed to get latest block, skipping chain %s", chain.Id))
+			}
+
 			for _, account := range chain.Accounts {
+				account.BlockTime = blockInfo.Block.Header.Time
+				account.BlockHeight = blockInfo.Block.Header.Height
+
 				if barEnabled {
 					bar.Describe(fmt.Sprintf("Getting account %s details", account.Name))
 				}
+
+				if err = querier.LoadAuthData(&account, httpClient, &chain); err != nil {
+					bar.Describe(err.Error())
+				}
+				bar.Add(1)
+				/*
+					if err := querier.LoadBankBalances(&account, httpClient, chain.RestEndpoint); err != nil {
+						bar.Describe(err.Error())
+					}
+					bar.Add(1)
+
+					err = querier.LoadDistributionData(acct, httpClient)
+					if err != nil {
+						bar.Describe(err.Error())
+					}
+					bar.Add(1)
+
+					err = querier.LoadStakingData(acct, httpClient)
+					if err != nil {
+						bar.Describe(err.Error())
+					}
+					bar.Add(1)*/
 			}
-		}
-
-		// Load each account details
-		for _, acct := range tomlConfig.Accounts.Entries {
-
-			// Don't show this if csv option enabled
-			if barEnabled {
-				bar.Describe(fmt.Sprintf("Getting account %s details", acct.Address))
-			}
-
-			// Get latest block information to include in the account
-			blockInfo, err := api.GetLatestBlock(acct.Chain, httpClient)
-			if err != nil {
-				bar.Describe(fmt.Sprintf("failed to get latest block: %s", err))
-			}
-			bar.Add(1)
-
-			acct.BlockHeight = blockInfo.Block.Header.Height
-			acct.BlockTime = blockInfo.Block.Header.Time
-
-			err = querier.LoadAuthData(acct, httpClient)
-			if err != nil {
-				bar.Describe(err.Error())
-			}
-
-			err = querier.LoadBankBalances(acct, httpClient)
-			if err != nil {
-				bar.Describe(err.Error())
-			}
-			bar.Add(1)
-
-			err = querier.LoadDistributionData(acct, httpClient)
-			if err != nil {
-				bar.Describe(err.Error())
-			}
-			bar.Add(1)
-
-			err = querier.LoadStakingData(acct, httpClient)
-			if err != nil {
-				bar.Describe(err.Error())
-			}
-			bar.Add(1)
 		}
 
 		// Hide bar

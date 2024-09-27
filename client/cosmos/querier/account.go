@@ -10,7 +10,6 @@ import (
 
 	"github.com/cosmos/cosmos-sdk/types/bech32"
 	"github.com/informalsystems/stakooler/client/cosmos/api"
-	"github.com/informalsystems/stakooler/client/cosmos/api/osmosis"
 	"github.com/informalsystems/stakooler/client/cosmos/model"
 )
 
@@ -21,14 +20,14 @@ type TokenDetail struct {
 	Precision int
 }
 
-func LoadAuthData(account *model.Account, client *http.Client) error {
-	var authResponse model.AuthResponse
-	authResponse, err := api.GetAuth(account, client)
+func LoadAuthData(account *model.Account, client *http.Client, chain *model.Chain) error {
+	acctResponse, err := api.GetAaccount(account.Address, chain.RestEndpoint, client)
 	if err != nil {
 		return errors.New(fmt.Sprintf("failed to get auth info: %s", err))
 	}
-	for _, value := range authResponse.Account.BaseVestingAccount.OriginalVesting {
-		metadata := GetDenomMetadata(value.Denom, *account, client)
+
+	for _, value := range acctResponse.Account.BaseVestingAccount.OriginalVesting {
+		metadata := GetDenomMetadata(value.Denom, chain, client)
 		amount, err2 := strconv.ParseFloat(value.Amount, 1)
 		if err2 != nil {
 			return errors.New(fmt.Sprintf("error converting rewards amount: %s", err2))
@@ -54,8 +53,8 @@ func LoadAuthData(account *model.Account, client *http.Client) error {
 		}
 	}
 
-	for _, value := range authResponse.Account.BaseVestingAccount.DelegatedVesting {
-		metadata := GetDenomMetadata(value.Denom, *account, client)
+	for _, value := range acctResponse.Account.BaseVestingAccount.DelegatedVesting {
+		metadata := GetDenomMetadata(value.Denom, chain, client)
 		amount, err2 := strconv.ParseFloat(value.Amount, 1)
 		if err2 != nil {
 			return errors.New(fmt.Sprintf("error converting rewards amount: %s", err2))
@@ -84,8 +83,9 @@ func LoadAuthData(account *model.Account, client *http.Client) error {
 	return nil
 }
 
-func LoadBankBalances(account *model.Account, client *http.Client) error {
-	balancesResponse, err := api.GetBalances(account, client)
+/*
+func LoadBankBalances(account *model.Account, client *http.Client, endpoint string) error {
+	balancesResponse, err := api.GetBalances(account, client, endpoint)
 	if err != nil {
 		return errors.New(fmt.Sprintf("failed to get balances: %s", err))
 	}
@@ -98,7 +98,7 @@ func LoadBankBalances(account *model.Account, client *http.Client) error {
 			continue
 		}
 
-		metadata := GetDenomMetadata(balance.Denom, *account, client)
+		metadata := GetDenomMetadataFromBank(balance.Denom, *account, client)
 		amount, err2 := strconv.ParseFloat(balance.Amount, 1)
 		if err2 != nil {
 			return errors.New(fmt.Sprintf("error converting balance amount: %s", err2))
@@ -138,7 +138,7 @@ func LoadDistributionData(account *model.Account, client *http.Client) error {
 
 	for i := range rewardsResponse.Total {
 		reward := rewardsResponse.Total[i]
-		metadata := GetDenomMetadata(reward.Denom, *account, client)
+		metadata := GetDenomMetadataFromBank(reward.Denom, *account, client)
 
 		// Skip liquidity pools and IBC tokens
 		if strings.HasPrefix(strings.ToUpper(reward.Denom), "GAMM/POOL/") ||
@@ -181,7 +181,7 @@ func LoadDistributionData(account *model.Account, client *http.Client) error {
 		} else {
 			for i := range commissions.Commissions.Commission {
 				commission := commissions.Commissions.Commission[i]
-				metadata := GetDenomMetadata(commission.Denom, *account, client)
+				metadata := GetDenomMetadataFromBank(commission.Denom, *account, client)
 
 				// Skip liquidity pools and IBC tokens
 				if strings.HasPrefix(strings.ToUpper(commission.Denom), "GAMM/POOL/") ||
@@ -230,7 +230,7 @@ func LoadStakingData(account *model.Account, client *http.Client) error {
 		return errors.New(fmt.Sprintf("failed to get staking params: %s", err))
 	}
 
-	metadata := GetDenomMetadata(params.ParamsResponse.BondDenom, *account, client)
+	metadata := GetDenomMetadataFromBank(params.ParamsResponse.BondDenom, *account, client)
 
 	for i := range delegations.DelegationResponses {
 		delegation := delegations.DelegationResponses[i]
@@ -295,46 +295,37 @@ func LoadStakingData(account *model.Account, client *http.Client) error {
 
 	return nil
 }
+*/
 
 // GetDenomMetadata This function checks if the denom is for a chain (e.g. Osmosis or Sifchain)
 // that keeps an asset list or registry for their denominations for the IBC denoms
 // or the liquidity pools. The function returns the UI friendly name and the exponent
 // used by the denom. If there are any errors just return the denom and 0 for
 // the precision exponent
-func GetDenomMetadata(denom string, account model.Account, client *http.Client) TokenDetail {
-	symbol := denom
-	precision := 0
-	bech32Prefix, _, _ := bech32.DecodeAndConvert(account.Address)
+func GetDenomMetadata(denom string, chain *model.Chain, client *http.Client) TokenDetail {
+	var symbol string
+	exponent := 0
 
-	// Check the chain and bech32Prefix and if matches one of the chains that have a registry or asset list
-	// use that information to find the token metadata
-	// TODO: In the future use the information from the chain registry instead of hard-coded values
-	if strings.ToLower(bech32Prefix) == "osmo" {
-		// TODO: Don't fetch this for every account
-		list, _ := osmosis.GetAssetsList()
-		symbol, precision = list.GetSymbolExponent(denom)
-	} else {
-		// Try to get the denometadata from the chain
-		//if strings.Contains(denom, "ibc/") {
-		//	denomM
-		//}
-		denomMetadata, _ := api.GetDenomMetadata(&account, denom, client)
-		// In case no denom metadata is available just use the denom - 'u' and precision 6
+	if chain.AssetList != nil {
+		symbol, exponent = chain.AssetList.GetAssetDetails(denom)
+	}
+	// in case asset details are missing
+	if exponent == 0 {
+		denomMetadata, _ := api.GetDenomMetadataFromBank(denom, chain.RestEndpoint, client)
 		if denomMetadata.Metadata.Base == "" {
-			symbol = strings.ToUpper(denom[1:])
-			precision = 6
+			symbol = denom
+			exponent = 6
 		} else {
-			symbol = denomMetadata.Metadata.Display
-			precision = api.GetExponent(&denomMetadata)
+			symbol = strings.ToUpper(denomMetadata.Metadata.Display)
+			exponent = api.GetExponent(&denomMetadata)
 		}
-
 	}
 
 	// If it's an IBC denom add '(IBC)' to the symbol
 	if strings.HasPrefix(strings.ToUpper(denom), "IBC/") {
-		symbol = symbol + " (ibc)"
+		symbol = symbol + " (IBC)"
 	}
-	return TokenDetail{strings.ToUpper(symbol), precision}
+	return TokenDetail{symbol, exponent}
 }
 
 func GetValidatorAccount(account *model.Account) (string, error) {

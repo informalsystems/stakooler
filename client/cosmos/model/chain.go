@@ -12,4 +12,5 @@ type Chain struct {
 	Accounts     []Account
 	Denom        string
 	Exponent     int
+	AssetList    *AssetList
 }

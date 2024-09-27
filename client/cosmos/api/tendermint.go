@@ -9,10 +9,10 @@ import (
 	"github.com/informalsystems/stakooler/client/cosmos/model"
 )
 
-func GetLatestBlock(chain model.Chain, client *http.Client) (response model.BlockResponse, err error) {
+func GetLatestBlock(endpoint string, client *http.Client) (response model.BlockResponse, err error) {
 	var body []byte
 
-	url := chain.RestEndpoint + "/cosmos/base/tendermint/v1beta1/blocks/latest"
+	url := endpoint + "/cosmos/base/tendermint/v1beta1/blocks/latest"
 	body, err = cosmos.HttpGet(url, client)
 	if err != nil {
 		return
