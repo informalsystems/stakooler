@@ -280,7 +280,7 @@ func (c *Chain) ProcessDelegations(resp *model.Delegations, idx int, client *htt
 				foundToken := false
 				for j := range c.Accounts[idx].Tokens {
 					if strings.ToLower(c.Accounts[idx].Tokens[j].Denom) == strings.ToLower(value.Balance.Denom) {
-						c.Accounts[idx].Tokens[j].Commission += convertedAmount
+						c.Accounts[idx].Tokens[j].Delegation += convertedAmount
 						foundToken = true
 					}
 				}
@@ -311,7 +311,7 @@ func (c *Chain) ProcessUnbondings(resp *model.Unbondings, idx int, client *http.
 					foundToken := false
 					for j := range c.Accounts[idx].Tokens {
 						if strings.ToLower(c.Accounts[idx].Tokens[j].Denom) == strings.ToLower(c.BondDenom) {
-							c.Accounts[idx].Tokens[j].Commission += convertedAmount
+							c.Accounts[idx].Tokens[j].Unbonding += convertedAmount
 							foundToken = true
 						}
 					}

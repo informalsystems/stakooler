@@ -70,13 +70,6 @@ It shows tokens balance, rewards, delegation and unbonding values per account`,
 				log.Error().Err(err).Msg("failed fetching accounts")
 			}
 			bar.Add(1)
-
-			/*
-				err = query.LoadStakingData(acct, httpClient)
-				if err != nil {
-					bar.Describe(err.Error())
-				}
-				bar.Add(1)*/
 		}
 
 		if err := bar.Finish(); err != nil {
