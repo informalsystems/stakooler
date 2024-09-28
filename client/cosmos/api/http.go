@@ -1,4 +1,4 @@
-package cosmos
+package api
 
 import (
 	"errors"
@@ -13,33 +13,36 @@ func NewHttpClient() (client *http.Client) {
 	return
 }
 
-func HttpGet(url string, client *http.Client) (body []byte, err error) {
+func HttpGet(url string, client *http.Client) ([]byte, error) {
 	var req *http.Request
 	var res *http.Response
+	var body []byte
 
-	req, err = http.NewRequest("GET", url, nil)
+	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
-		return
+		return nil, err
 	}
 
 	res, err = client.Do(req)
 	if err != nil {
-		return
+		return nil, err
 	}
 
 	if res.StatusCode != http.StatusOK {
-		err = errors.New(fmt.Sprintf("failed http query: %d", req.Response.StatusCode))
-		return
+		return nil, errors.New(fmt.Sprintf("failed http query: %d", res.StatusCode))
 	}
 
 	defer func(Body io.ReadCloser) {
-		err := Body.Close()
+		err = Body.Close()
 		if err != nil {
 			return
 		}
 	}(res.Body)
 
 	body, err = io.ReadAll(res.Body)
+	if err != nil {
+		return nil, err
+	}
 
-	return
+	return body, nil
 }

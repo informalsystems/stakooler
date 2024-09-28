@@ -3,7 +3,6 @@ package cmd
 import (
 	"fmt"
 
-	"github.com/informalsystems/stakooler/client/cosmos"
 	"github.com/informalsystems/stakooler/client/cosmos/api"
 	"github.com/informalsystems/stakooler/client/cosmos/querier"
 	"github.com/informalsystems/stakooler/client/display"
@@ -56,7 +55,7 @@ It shows tokens balance, rewards, delegation and unbonding values per account`,
 			bar = progressbar.New(0)
 		}
 
-		httpClient := cosmos.NewHttpClient()
+		httpClient := api.NewHttpClient()
 		chains := config.ParseChainConfig(rawAcctData, httpClient)
 
 		for _, chain := range chains.Entries {
@@ -87,13 +86,12 @@ It shows tokens balance, rewards, delegation and unbonding values per account`,
 					bar.Describe(err.Error())
 				}
 				bar.Add(1)
-				/*
-					err = querier.LoadDistributionData(acct, httpClient)
-					if err != nil {
-						bar.Describe(err.Error())
-					}
-					bar.Add(1)
 
+				if err = querier.LoadDistributionData(account, httpClient, chain); err != nil {
+					bar.Describe(err.Error())
+				}
+				bar.Add(1)
+				/*
 					err = querier.LoadStakingData(acct, httpClient)
 					if err != nil {
 						bar.Describe(err.Error())
@@ -108,7 +106,7 @@ It shows tokens balance, rewards, delegation and unbonding values per account`,
 		// If csv flag specified use csv output
 		if *flagCsv {
 			// write csv file
-			display.WriteAccountsCSV(&tomlConfig.Accounts)
+			display.WriteAccountsCSV(&chains)
 		} else if *flagZbxAcctDetails {
 			display.ZbxSendChainDiscovery(&tomlConfig)
 			display.ZbxSendAccountsDiscovery(&tomlConfig)

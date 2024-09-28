@@ -95,15 +95,24 @@ func ParseChainConfig(data *model.RawAccountData, httpClient *http.Client) model
 				if err != nil {
 					log.Error().Err(err).Msg(fmt.Sprintf("cannot decode hex encoded account %s", acct.Address))
 				}
-				if encodedAddr, err := bech32.ConvertAndEncode(chainData.Bech32Prefix, decoded); err != nil {
+
+				encodedAddr, err := bech32.ConvertAndEncode(chainData.Bech32Prefix, decoded)
+				if err != nil {
 					log.Error().Err(err).Msg("cannot bech32 encode address, skipping account")
 					continue
-				} else {
-					chainData.Accounts = append(chainData.Accounts, &model.Account{
-						Name:    acct.Name,
-						Address: encodedAddr,
-					})
 				}
+
+				encodeValoper, err := bech32.ConvertAndEncode(chainData.Bech32Prefix+"valoper", decoded)
+				if err != nil {
+					log.Error().Err(err).Msg("cannot bech32 encode address, skipping account")
+					continue
+				}
+
+				chainData.Accounts = append(chainData.Accounts, &model.Account{
+					Name:    acct.Name,
+					Address: encodedAddr,
+					Valoper: encodeValoper,
+				})
 			}
 		}
 		chains.Entries = append(chains.Entries, chainData)

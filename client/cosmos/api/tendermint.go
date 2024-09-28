@@ -5,7 +5,6 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/informalsystems/stakooler/client/cosmos"
 	"github.com/informalsystems/stakooler/client/cosmos/model"
 )
 
@@ -13,7 +12,7 @@ func GetLatestBlock(endpoint string, client *http.Client) (response model.BlockR
 	var body []byte
 
 	url := endpoint + "/cosmos/base/tendermint/v1beta1/blocks/latest"
-	body, err = cosmos.HttpGet(url, client)
+	body, err = HttpGet(url, client)
 	if err != nil {
 		return
 	}

@@ -5,7 +5,6 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/informalsystems/stakooler/client/cosmos"
 	"github.com/informalsystems/stakooler/client/cosmos/model"
 )
 
@@ -13,7 +12,7 @@ func GetBalances(address string, endpoint string, client *http.Client) (response
 	var body []byte
 
 	url := endpoint + "/cosmos/bank/v1beta1/balances/" + address
-	body, err = cosmos.HttpGet(url, client)
+	body, err = HttpGet(url, client)
 
 	err = json.Unmarshal(body, &response)
 	if err != nil {
@@ -26,7 +25,7 @@ func GetDenomMetadataFromBank(denom string, endpoint string, client *http.Client
 	var body []byte
 
 	url := endpoint + "/cosmos/bank/v1beta1/denoms_metadata/" + denom
-	body, err = cosmos.HttpGet(url, client)
+	body, err = HttpGet(url, client)
 	if err != nil {
 		return
 	}

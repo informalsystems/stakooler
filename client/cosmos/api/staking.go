@@ -6,7 +6,6 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/informalsystems/stakooler/client/cosmos"
 	"github.com/informalsystems/stakooler/client/cosmos/model"
 )
 
@@ -14,7 +13,7 @@ func GetDelegations(account *model.Account, client *http.Client) (response model
 	var body []byte
 
 	url := account.Chain.RestEndpoint + "/cosmos/staking/v1beta1/delegations/" + account.Address
-	body, err = cosmos.HttpGet(url, client)
+	body, err = HttpGet(url, client)
 	if err != nil {
 		return
 	}
@@ -29,7 +28,7 @@ func GetUnbondings(account *model.Account, client *http.Client) (response model.
 	var body []byte
 
 	url := account.Chain.RestEndpoint + "/cosmos/staking/v1beta1/delegators/" + account.Address + "/unbonding_delegations"
-	body, err = cosmos.HttpGet(url, client)
+	body, err = HttpGet(url, client)
 	if err != nil {
 		return
 	}
@@ -45,7 +44,7 @@ func GetStakingParams(chainEndpoint string, client *http.Client) (response model
 	var body []byte
 
 	url := chainEndpoint + "/cosmos/staking/v1beta1/params"
-	body, err = cosmos.HttpGet(url, client)
+	body, err = HttpGet(url, client)
 	if err != nil {
 		return
 	}

@@ -13,6 +13,7 @@ type Accounts struct {
 type Account struct {
 	Name        string
 	Address     string
+	Valoper     string
 	Chain       Chain
 	BlockTime   time.Time
 	BlockHeight string
