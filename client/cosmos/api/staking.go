@@ -9,30 +9,33 @@ import (
 	"github.com/informalsystems/stakooler/client/cosmos/model"
 )
 
-func GetDelegations(account *model.Account, client *http.Client) (response model.Delegations, err error) {
+func GetDelegations(address string, endpoint string, client *http.Client) (response *model.Delegations, err error) {
 	var body []byte
 
-	url := account.Chain.RestEndpoint + "/cosmos/staking/v1beta1/delegations/" + account.Address
+	url := endpoint + "/cosmos/staking/v1beta1/delegations/" + address
 	body, err = HttpGet(url, client)
 	if err != nil {
 		return
 	}
-	err = json.Unmarshal(body, &response)
+
+	response = &model.Delegations{}
+	err = json.Unmarshal(body, response)
 	if err != nil {
 		return
 	}
 	return
 }
 
-func GetUnbondings(account *model.Account, client *http.Client) (response model.Unbondings, err error) {
+func GetUnbondings(address string, endpoint string, client *http.Client) (response *model.Unbondings, err error) {
 	var body []byte
 
-	url := account.Chain.RestEndpoint + "/cosmos/staking/v1beta1/delegators/" + account.Address + "/unbonding_delegations"
+	url := endpoint + "/cosmos/staking/v1beta1/delegators/" + address + "/unbonding_delegations"
 	body, err = HttpGet(url, client)
 	if err != nil {
 		return
 	}
 
+	response = &model.Unbondings{}
 	err = json.Unmarshal(body, &response)
 	if err != nil {
 		return
@@ -56,10 +59,10 @@ func GetStakingParams(chainEndpoint string, client *http.Client) (response model
 	return
 }
 
-func GetChainValidators(validator *model.Validator) (model.Validators, error) {
+func GetChainValidators(endpoint string) (model.Validators, error) {
 	var validators model.Validators
 
-	url := validator.Chain.RestEndpoint + "/cosmos/staking/v1beta1/validators?pagination.limit=1000&pagination.count_total=true&status=BOND_STATUS_BONDED"
+	url := endpoint + "/cosmos/staking/v1beta1/validators?pagination.limit=1000&pagination.count_total=true&status=BOND_STATUS_BONDED"
 	method := "GET"
 
 	client := &http.Client{}
@@ -91,9 +94,9 @@ func GetChainValidators(validator *model.Validator) (model.Validators, error) {
 	return validators, nil
 }
 
-func GetValidatorUnbondings(validator *model.Validator) (model.Unbondings, error) {
+func GetValidatorUnbondings(endpoint string, address string) (model.Unbondings, error) {
 	var unbondings model.Unbondings
-	url := validator.Chain.RestEndpoint + "/cosmos/staking/v1beta1/validators/" + validator.ValoperAddress + "/unbonding_delegations"
+	url := endpoint + "/cosmos/staking/v1beta1/validators/" + address + "/unbonding_delegations"
 	method := "GET"
 
 	client := &http.Client{}
@@ -123,10 +126,10 @@ func GetValidatorUnbondings(validator *model.Validator) (model.Unbondings, error
 	return unbondings, nil
 }
 
-func GetValidatorDelegations(validator *model.Validator) (model.Delegations, error) {
+func GetValidatorDelegations(endpoint string, valoper string) (model.Delegations, error) {
 	var delegations model.Delegations
 
-	url := validator.Chain.RestEndpoint + "/cosmos/staking/v1beta1/validators/" + validator.ValoperAddress + "/delegations?pagination.limit=15000&pagination.count_total=true"
+	url := endpoint + "/cosmos/staking/v1beta1/validators/" + valoper + "/delegations?pagination.limit=15000&pagination.count_total=true"
 	method := "GET"
 
 	client := &http.Client{}

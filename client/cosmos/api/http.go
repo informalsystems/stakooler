@@ -28,10 +28,6 @@ func HttpGet(url string, client *http.Client) ([]byte, error) {
 		return nil, err
 	}
 
-	if res.StatusCode != http.StatusOK {
-		return nil, errors.New(fmt.Sprintf("failed http query: %d", res.StatusCode))
-	}
-
 	defer func(Body io.ReadCloser) {
 		err = Body.Close()
 		if err != nil {
@@ -44,5 +40,10 @@ func HttpGet(url string, client *http.Client) ([]byte, error) {
 		return nil, err
 	}
 
+	// returning the body even if the status code is not 200
+	// allows the caller to decide if it should stop
+	if res.StatusCode != http.StatusOK {
+		return body, errors.New(fmt.Sprintf("status code: %d", res.StatusCode))
+	}
 	return body, nil
 }

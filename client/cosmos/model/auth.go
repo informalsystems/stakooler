@@ -14,13 +14,12 @@ type Account struct {
 	Name        string
 	Address     string
 	Valoper     string
-	Chain       Chain
 	BlockTime   time.Time
 	BlockHeight string
-	TokensEntry []TokenEntry
+	Tokens      []*Token
 }
 
-type TokenEntry struct {
+type Token struct {
 	DisplayName      string
 	Denom            string
 	Balance          float64

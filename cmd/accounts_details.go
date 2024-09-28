@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	"github.com/informalsystems/stakooler/client/cosmos/api"
-	"github.com/informalsystems/stakooler/client/cosmos/querier"
 	"github.com/informalsystems/stakooler/client/display"
 	"github.com/informalsystems/stakooler/config"
 
@@ -27,12 +26,6 @@ var accountDetailsCmd = &cobra.Command{
 It shows tokens balance, rewards, delegation and unbonding values per account`,
 	Run: func(cmd *cobra.Command, args []string) {
 		barEnabled := !*flagCsv && !*flagZbxAcctDetails
-		tomlConfig, err := config.LoadConfig(flagConfigPath)
-		if err != nil {
-			log.Fatal().Err(err).Msg("error reading configuration file:")
-		}
-
-		// Load account data
 		rawAcctData, err := config.ReadAccountData("")
 		if err != nil {
 			log.Fatal().Err(err).Msg("error reading account data file")
@@ -40,10 +33,13 @@ It shows tokens balance, rewards, delegation and unbonding values per account`,
 
 		var bar *progressbar.ProgressBar
 
+		httpClient := api.NewHttpClient()
+		chains := config.ParseChainConfig(rawAcctData, httpClient)
+
 		if barEnabled {
 			// Progress bar
 			// iterations are the api calls number times the number of accounts
-			totalIterations := len(tomlConfig.Accounts.Entries) * 6
+			totalIterations := len(chains.Entries)
 			bar = progressbar.NewOptions(totalIterations, progressbar.OptionEnableColorCodes(true), progressbar.OptionShowBytes(false), progressbar.OptionSetWidth(25), progressbar.OptionUseANSICodes(false), progressbar.OptionClearOnFinish(), progressbar.OptionSetPredictTime(false), progressbar.OptionSetTheme(progressbar.Theme{
 				Saucer:        "▪︎[reset]",
 				SaucerHead:    ">[reset]",
@@ -54,9 +50,6 @@ It shows tokens balance, rewards, delegation and unbonding values per account`,
 		} else {
 			bar = progressbar.New(0)
 		}
-
-		httpClient := api.NewHttpClient()
-		chains := config.ParseChainConfig(rawAcctData, httpClient)
 
 		for _, chain := range chains.Entries {
 			chain.AssetList, err = api.GetAssetsList(chain.Name, httpClient)
@@ -69,50 +62,34 @@ It shows tokens balance, rewards, delegation and unbonding values per account`,
 				log.Error().Err(err).Msg(fmt.Sprintf("failed to get latest block, skipping chain %s", chain.Id))
 			}
 
-			for _, account := range chain.Accounts {
-				account.BlockTime = blockInfo.Block.Header.Time
-				account.BlockHeight = blockInfo.Block.Header.Height
-
-				if barEnabled {
-					bar.Describe(fmt.Sprintf("Getting account %s details", account.Name))
-				}
-
-				if err = querier.LoadAuthData(account, httpClient, chain); err != nil {
-					bar.Describe(err.Error())
-				}
-				bar.Add(1)
-
-				if err := querier.LoadBankBalances(account, httpClient, chain); err != nil {
-					bar.Describe(err.Error())
-				}
-				bar.Add(1)
-
-				if err = querier.LoadDistributionData(account, httpClient, chain); err != nil {
-					bar.Describe(err.Error())
-				}
-				bar.Add(1)
-				/*
-					err = querier.LoadStakingData(acct, httpClient)
-					if err != nil {
-						bar.Describe(err.Error())
-					}
-					bar.Add(1)*/
+			if barEnabled {
+				bar.Describe(fmt.Sprintf("Getting chain %s details", chain.Id))
 			}
+
+			if err = chain.FetchAccountBalances(blockInfo, httpClient); err != nil {
+				log.Error().Err(err).Msg("failed fetching accounts")
+			}
+			bar.Add(1)
+
+			/*
+				err = query.LoadStakingData(acct, httpClient)
+				if err != nil {
+					bar.Describe(err.Error())
+				}
+				bar.Add(1)*/
 		}
 
-		// Hide bar
-		bar.Finish()
+		if err := bar.Finish(); err != nil {
+			log.Error().Err(err).Msg(fmt.Sprintf("failed to finish bar"))
+		}
 
-		// If csv flag specified use csv output
 		if *flagCsv {
-			// write csv file
 			display.WriteAccountsCSV(&chains)
 		} else if *flagZbxAcctDetails {
-			display.ZbxSendChainDiscovery(&tomlConfig)
-			display.ZbxSendAccountsDiscovery(&tomlConfig)
-			display.ZbxAccountsDetails(&tomlConfig)
+			//			display.ZbxSendChainDiscovery(&tomlConfig)
+			//			display.ZbxSendAccountsDiscovery(&tomlConfig)
+			//			display.ZbxAccountsDetails(&tomlConfig)
 		} else {
-			// Print table information
 			display.PrintAccountDetailsTable(&chains)
 		}
 	},

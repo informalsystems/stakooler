@@ -6,13 +6,6 @@ type ZabbixConfig struct {
 	Host   string
 }
 
-type Config struct {
-	Accounts   Accounts
-	Validators ValidatorList
-	Chains     Chains
-	Zabbix     ZabbixConfig
-}
-
 type RawAccountData struct {
 	Accounts []struct {
 		Name      string `json:"name"`

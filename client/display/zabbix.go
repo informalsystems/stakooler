@@ -1,15 +1,6 @@
 package display
 
-import (
-	"fmt"
-	"log"
-	"strings"
-	"time"
-
-	sender "github.com/adubkov/go-zabbix"
-	"github.com/informalsystems/stakooler/client/cosmos/model"
-)
-
+/*
 func ZbxValidatorStats(config *model.Config) {
 	for _, validator := range config.Validators.Entries {
 		var metrics []*sender.Metric
@@ -26,15 +17,15 @@ func ZbxValidatorStats(config *model.Config) {
 
 		fmt.Println(fmt.Sprintf("Validator stats response: %s", SendPacket(metrics, config)))
 	}
-}
-
+}*/
+/*
 func ZbxAccountsDetails(config *model.Config) {
 	for _, chain := range config.Chains.Entries {
 
 		for _, account := range config.Accounts.Entries {
 			if chain.Id == account.Chain.Id {
 				var metrics []*sender.Metric
-				for _, token := range account.TokensEntry {
+				for _, token := range account.Tokens {
 					metrics = append(metrics, sender.NewMetric(account.Chain.Id, "account.address.["+account.Address+"]", account.Address, account.BlockTime.Unix()))
 					metrics = append(metrics, sender.NewMetric(account.Chain.Id, "account.balance.["+account.Address+"]", fmt.Sprintf("%.2f", token.Balance), account.BlockTime.Unix()))
 					metrics = append(metrics, sender.NewMetric(account.Chain.Id, "account.height.["+account.Address+"]", account.BlockHeight, account.BlockTime.Unix()))
@@ -53,8 +44,8 @@ func ZbxAccountsDetails(config *model.Config) {
 			}
 		}
 	}
-}
-
+}*/
+/*
 func ZbxSendAccountsDiscovery(config *model.Config) {
 	for _, chain := range config.Chains.Entries {
 		var message []*sender.Metric
@@ -115,3 +106,4 @@ func SendPacket(message []*sender.Metric, config *model.Config) string {
 
 	return fmt.Sprintf("%s", string(resp))
 }
+*/

@@ -2,17 +2,14 @@ package display
 
 import (
 	"fmt"
-	"github.com/informalsystems/stakooler/client/cosmos/model"
+	"github.com/informalsystems/stakooler/client/cosmos/query"
 	"github.com/jedib0t/go-pretty/v6/table"
 	"github.com/jedib0t/go-pretty/v6/text"
-	"golang.org/x/text/language"
-	"golang.org/x/text/message"
 	"os"
 	"strings"
-	"time"
 )
 
-func PrintAccountDetailsTable(chains *model.Chains) {
+func PrintAccountDetailsTable(chains *query.Chains) {
 	for _, chain := range chains.Entries {
 		t := table.NewWriter()
 		t.SetOutputMirror(os.Stdout)
@@ -21,7 +18,7 @@ func PrintAccountDetailsTable(chains *model.Chains) {
 		t.AppendHeader(table.Row{"Name", "Account", "Token", "Balance", "Rewards", "Staked", "Unbonding", "Commissions", "Original Vesting", "Delegated Vesting", "Total"})
 
 		for _, account := range chain.Accounts {
-			for idx, e := range account.TokensEntry {
+			for idx, e := range account.Tokens {
 				total := e.Vesting - e.DelegatedVesting + e.Balance + e.Reward + e.Delegation + e.Unbonding + e.Commission
 				if idx == 0 {
 					t.AppendRow([]interface{}{
@@ -74,7 +71,7 @@ func PrintAccountDetailsTable(chains *model.Chains) {
 	return
 }
 
-func PrintValidatorStasTable(validators *model.ValidatorList) {
+/*func PrintValidatorStasTable(validators *model.ValidatorList) {
 	t := table.NewWriter()
 	t.SetOutputMirror(os.Stdout)
 	t.SetTitle(strings.ToUpper("Validator - Statistics"))
@@ -119,6 +116,7 @@ func PrintValidatorStasTable(validators *model.ValidatorList) {
 	t.Render()
 	return
 }
+*/
 
 func FilterZeroValue(value float64) string {
 	if value > 0.00000 {

@@ -3,14 +3,13 @@ package display
 import (
 	"encoding/csv"
 	"fmt"
+	"github.com/informalsystems/stakooler/client/cosmos/query"
 	"log"
 	"os"
 	"time"
-
-	"github.com/informalsystems/stakooler/client/cosmos/model"
 )
 
-func WriteAccountsCSV(chains *model.Chains) {
+func WriteAccountsCSV(chains *query.Chains) {
 	w := csv.NewWriter(os.Stdout)
 	defer w.Flush()
 
@@ -21,7 +20,7 @@ func WriteAccountsCSV(chains *model.Chains) {
 
 	for _, chain := range chains.Entries {
 		for _, acct := range chain.Accounts {
-			entries := acct.TokensEntry
+			entries := acct.Tokens
 
 			// In case there is no token information
 			if len(entries) == 0 {
@@ -33,7 +32,7 @@ func WriteAccountsCSV(chains *model.Chains) {
 					log.Fatalln("error writing record", err)
 				}
 			} else {
-				for i := range acct.TokensEntry {
+				for i := range acct.Tokens {
 					total := entries[i].Balance + entries[i].Reward + entries[i].Delegation + entries[i].Unbonding + entries[i].Commission
 					record := []string{
 						acct.Name,
@@ -41,14 +40,14 @@ func WriteAccountsCSV(chains *model.Chains) {
 						chain.Id,
 						acct.BlockHeight,
 						acct.BlockTime.Format(time.RFC3339Nano),
-						acct.TokensEntry[i].DisplayName,
-						fmt.Sprintf("%f", acct.TokensEntry[i].Balance),
-						fmt.Sprintf("%f", acct.TokensEntry[i].Reward),
-						fmt.Sprintf("%f", acct.TokensEntry[i].Delegation),
-						fmt.Sprintf("%f", acct.TokensEntry[i].Unbonding),
-						fmt.Sprintf("%f", acct.TokensEntry[i].Commission),
-						fmt.Sprintf("%f", acct.TokensEntry[i].Vesting),
-						fmt.Sprintf("%f", acct.TokensEntry[i].DelegatedVesting),
+						acct.Tokens[i].DisplayName,
+						fmt.Sprintf("%f", acct.Tokens[i].Balance),
+						fmt.Sprintf("%f", acct.Tokens[i].Reward),
+						fmt.Sprintf("%f", acct.Tokens[i].Delegation),
+						fmt.Sprintf("%f", acct.Tokens[i].Unbonding),
+						fmt.Sprintf("%f", acct.Tokens[i].Commission),
+						fmt.Sprintf("%f", acct.Tokens[i].Vesting),
+						fmt.Sprintf("%f", acct.Tokens[i].DelegatedVesting),
 						fmt.Sprintf("%f", total),
 					}
 					if err := w.Write(record); err != nil {
@@ -60,7 +59,7 @@ func WriteAccountsCSV(chains *model.Chains) {
 	}
 }
 
-func WriteValidatorCSV(validators *model.ValidatorList) {
+/*func WriteValidatorCSV(validators *model.ValidatorList) {
 
 	// Outputs to Stdout
 	w := csv.NewWriter(os.Stdout)
@@ -91,3 +90,4 @@ func WriteValidatorCSV(validators *model.ValidatorList) {
 		}
 	}
 }
+*/

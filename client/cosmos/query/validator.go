@@ -1,21 +1,9 @@
-package querier
+package query
 
-import (
-	"errors"
-	"fmt"
-	"github.com/informalsystems/stakooler/client/cosmos/api"
-	"github.com/informalsystems/stakooler/client/cosmos/model"
-	"github.com/rs/zerolog/log"
-	"github.com/schollz/progressbar/v3"
-	"sort"
-	"strconv"
-	"strings"
-)
-
-func LoadValidatorStats(validator *model.Validator, bar *progressbar.ProgressBar) error {
+/*func LoadValidatorStats(validator *model.Validator, bar *progressbar.ProgressBar) error {
 
 	// Get chain validators
-	validators, err := api.GetChainValidators(validator)
+	validators, err := api.GetChainValidators("standin")
 	if err != nil {
 		log.Error().Err(err).Msg("error getting validators")
 		return err
@@ -87,7 +75,7 @@ func LoadValidatorStats(validator *model.Validator, bar *progressbar.ProgressBar
 
 	// Get block time
 	validator.BlockHeight = validators.BlockHeight
-	block, _ := api.GetBlock(validator.BlockHeight, validator.Chain)
+	block, _ := api.GetBlock(validator.BlockHeight, validator.Chain.RestEndpoint)
 	bar.Add(1)
 
 	validator.BlockTime = block.Block.Header.Time
@@ -102,3 +90,4 @@ func LoadValidatorStats(validator *model.Validator, bar *progressbar.ProgressBar
 
 	return nil
 }
+*/

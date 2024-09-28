@@ -1,6 +1,8 @@
 package model
 
-import "time"
+import (
+	"time"
+)
 
 type ValidatorList struct {
 	Entries []*Validator
@@ -9,7 +11,6 @@ type ValidatorList struct {
 type Validator struct {
 	Moniker        string
 	ValoperAddress string
-	Chain          Chain
 	BlockTime      time.Time
 	BlockHeight    string
 	VotingPower    int64

@@ -8,13 +8,14 @@ import (
 	"github.com/informalsystems/stakooler/client/cosmos/model"
 )
 
-func GetBalances(address string, endpoint string, client *http.Client) (response model.BalancesResponse, err error) {
+func GetBalances(address string, endpoint string, client *http.Client) (response *model.BalancesResponse, err error) {
 	var body []byte
 
 	url := endpoint + "/cosmos/bank/v1beta1/balances/" + address
 	body, err = HttpGet(url, client)
 
-	err = json.Unmarshal(body, &response)
+	response = &model.BalancesResponse{}
+	err = json.Unmarshal(body, response)
 	if err != nil {
 		return
 	}

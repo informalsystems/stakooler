@@ -24,10 +24,10 @@ func GetLatestBlock(endpoint string, client *http.Client) (response model.BlockR
 	return
 }
 
-func GetBlock(height string, chain model.Chain) (model.BlockResponse, error) {
+func GetBlock(height string, endpoint string) (model.BlockResponse, error) {
 	var response model.BlockResponse
 
-	url := chain.RestEndpoint + "/cosmos/base/tendermint/v1beta1/blocks/" + height
+	url := endpoint + "/cosmos/base/tendermint/v1beta1/blocks/" + height
 	method := "GET"
 
 	client := &http.Client{}
