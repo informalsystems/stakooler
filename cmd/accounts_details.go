@@ -59,7 +59,7 @@ It shows tokens balance, rewards, delegation and unbonding values per account`,
 		httpClient := cosmos.NewHttpClient()
 		chains := config.ParseChainConfig(rawAcctData, httpClient)
 
-		for _, chain := range chains {
+		for _, chain := range chains.Entries {
 			chain.AssetList, err = api.GetAssetsList(chain.Name, httpClient)
 			if err != nil {
 				log.Error().Err(err).Msg("error getting asset list")
@@ -78,16 +78,16 @@ It shows tokens balance, rewards, delegation and unbonding values per account`,
 					bar.Describe(fmt.Sprintf("Getting account %s details", account.Name))
 				}
 
-				if err = querier.LoadAuthData(&account, httpClient, &chain); err != nil {
+				if err = querier.LoadAuthData(account, httpClient, chain); err != nil {
+					bar.Describe(err.Error())
+				}
+				bar.Add(1)
+
+				if err := querier.LoadBankBalances(account, httpClient, chain); err != nil {
 					bar.Describe(err.Error())
 				}
 				bar.Add(1)
 				/*
-					if err := querier.LoadBankBalances(&account, httpClient, chain.RestEndpoint); err != nil {
-						bar.Describe(err.Error())
-					}
-					bar.Add(1)
-
 					err = querier.LoadDistributionData(acct, httpClient)
 					if err != nil {
 						bar.Describe(err.Error())
@@ -115,7 +115,7 @@ It shows tokens balance, rewards, delegation and unbonding values per account`,
 			display.ZbxAccountsDetails(&tomlConfig)
 		} else {
 			// Print table information
-			display.PrintAccountDetailsTable(&tomlConfig.Accounts)
+			display.PrintAccountDetailsTable(&chains)
 		}
 	},
 }

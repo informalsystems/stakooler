@@ -1,6 +1,7 @@
 package config
 
 import (
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"github.com/cosmos/cosmos-sdk/types/bech32"
@@ -70,10 +71,10 @@ func ReadAccountData(path string) (*model.RawAccountData, error) {
 	return &rawAcctData, nil
 }
 
-func ParseChainConfig(data *model.RawAccountData, httpClient *http.Client) []model.Chain {
-	var chains []model.Chain
+func ParseChainConfig(data *model.RawAccountData, httpClient *http.Client) model.Chains {
+	var chains model.Chains
 	for _, chain := range data.Chains {
-		chainData := model.Chain{
+		chainData := &model.Chain{
 			Name:         chain.Name,
 			Id:           chain.Id,
 			RestEndpoint: chain.Rest,
@@ -90,18 +91,22 @@ func ParseChainConfig(data *model.RawAccountData, httpClient *http.Client) []mod
 			acctIndex := slices.IndexFunc(chain.Accounts, func(c string) bool { return c == acct.Name })
 
 			if acctIndex != -1 {
-				if encodedAddr, err := bech32.ConvertAndEncode(chainData.Bech32Prefix, []byte(acct.Address)); err != nil {
+				decoded, err := hex.DecodeString(acct.Address)
+				if err != nil {
+					log.Error().Err(err).Msg(fmt.Sprintf("cannot decode hex encoded account %s", acct.Address))
+				}
+				if encodedAddr, err := bech32.ConvertAndEncode(chainData.Bech32Prefix, decoded); err != nil {
 					log.Error().Err(err).Msg("cannot bech32 encode address, skipping account")
 					continue
 				} else {
-					chainData.Accounts = append(chainData.Accounts, model.Account{
+					chainData.Accounts = append(chainData.Accounts, &model.Account{
 						Name:    acct.Name,
 						Address: encodedAddr,
 					})
 				}
 			}
 		}
-		chains = append(chains, chainData)
+		chains.Entries = append(chains.Entries, chainData)
 	}
 	return chains
 }
@@ -150,7 +155,7 @@ func LoadConfig(configPath string) (model.Config, error) {
 				Denom:        configuration.Chains[chIdx].Denom,
 				Exponent:     configuration.Chains[chIdx].Exponent,
 			}
-			chains.Entries = append(chains.Entries, chain)
+			chains.Entries = append(chains.Entries, &chain)
 		}
 
 		// Iterate through accounts in the configuration file
@@ -161,7 +166,6 @@ func LoadConfig(configPath string) (model.Config, error) {
 					account := model.Account{
 						Name:    configuration.Accounts[accIdx].Name,
 						Address: configuration.Accounts[accIdx].Address,
-						Chain:   c,
 					}
 					accounts.Entries = append(accounts.Entries, &account)
 					found = true
@@ -180,7 +184,6 @@ func LoadConfig(configPath string) (model.Config, error) {
 				if strings.ToUpper(c.Id) == strings.ToUpper(configuration.Validators[idx].Chain) {
 					validator := model.Validator{
 						ValoperAddress: configuration.Validators[idx].Valoper,
-						Chain:          c,
 					}
 					validators.Entries = append(validators.Entries, &validator)
 					found = true

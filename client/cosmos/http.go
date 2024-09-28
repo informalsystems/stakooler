@@ -1,6 +1,8 @@
 package cosmos
 
 import (
+	"errors"
+	"fmt"
 	"io"
 	"net/http"
 	"time"
@@ -22,6 +24,11 @@ func HttpGet(url string, client *http.Client) (body []byte, err error) {
 
 	res, err = client.Do(req)
 	if err != nil {
+		return
+	}
+
+	if res.StatusCode != http.StatusOK {
+		err = errors.New(fmt.Sprintf("failed http query: %d", req.Response.StatusCode))
 		return
 	}
 

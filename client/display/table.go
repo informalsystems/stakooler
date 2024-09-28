@@ -12,67 +12,65 @@ import (
 	"time"
 )
 
-func PrintAccountDetailsTable(accounts *model.Accounts) {
-	t := table.NewWriter()
-	t.SetOutputMirror(os.Stdout)
-	t.SetTitle(strings.ToUpper("Accounts - Details"))
-	t.SetCaption(fmt.Sprintf("Retrieved information for %d accounts", len(accounts.Entries)))
-	t.AppendHeader(table.Row{"Name", "Account", "Token", "Balance", "Rewards", "Staked", "Unbonding", "Commissions", "Original Vesting", "Delegated Vesting", "Total"})
+func PrintAccountDetailsTable(chains *model.Chains) {
+	for _, chain := range chains.Entries {
+		t := table.NewWriter()
+		t.SetOutputMirror(os.Stdout)
+		t.SetTitle(strings.ToUpper(fmt.Sprintf("Details for %s", chain.Name)))
+		t.SetCaption(fmt.Sprintf("Retrieved information for %d accounts", len(chain.Accounts)))
+		t.AppendHeader(table.Row{"Name", "Account", "Token", "Balance", "Rewards", "Staked", "Unbonding", "Commissions", "Original Vesting", "Delegated Vesting", "Total"})
 
-	for acctIdx := range accounts.Entries {
-		entries := accounts.Entries[acctIdx].TokensEntry
-		// To store the keys in slice in sorted order
+		for _, account := range chain.Accounts {
+			for idx, e := range account.TokensEntry {
+				total := e.Vesting - e.DelegatedVesting + e.Balance + e.Reward + e.Delegation + e.Unbonding + e.Commission
+				if idx == 0 {
+					t.AppendRow([]interface{}{
+						account.Name,
+						account.Address,
+						e.DisplayName,
+						FilterZeroValue(e.Balance),
+						FilterZeroValue(e.Reward),
+						FilterZeroValue(e.Delegation),
+						FilterZeroValue(e.Unbonding),
+						FilterZeroValue(e.Commission),
+						FilterZeroValue(e.Vesting),
+						FilterZeroValue(e.DelegatedVesting),
+						FilterZeroValue(total),
+					})
+				} else {
+					t.AppendRow([]interface{}{
+						"",
+						"",
+						FilterZeroValue(e.Balance),
+						FilterZeroValue(e.Reward),
+						FilterZeroValue(e.Delegation),
+						FilterZeroValue(e.Unbonding),
+						FilterZeroValue(e.Commission),
+						FilterZeroValue(e.Vesting),
+						FilterZeroValue(e.DelegatedVesting),
+						FilterZeroValue(total),
+					})
+				}
 
-		for i := range accounts.Entries[acctIdx].TokensEntry {
-			total := entries[i].Vesting - entries[i].DelegatedVesting + entries[i].Balance + entries[i].Reward + entries[i].Delegation + entries[i].Unbonding + entries[i].Commission
-			if i == 0 {
-				t.AppendRow([]interface{}{
-					accounts.Entries[acctIdx].Name,
-					accounts.Entries[acctIdx].Address,
-					accounts.Entries[acctIdx].TokensEntry[i].DisplayName,
-					FilterZeroValue(accounts.Entries[acctIdx].TokensEntry[i].Balance),
-					FilterZeroValue(accounts.Entries[acctIdx].TokensEntry[i].Reward),
-					FilterZeroValue(accounts.Entries[acctIdx].TokensEntry[i].Delegation),
-					FilterZeroValue(accounts.Entries[acctIdx].TokensEntry[i].Unbonding),
-					FilterZeroValue(accounts.Entries[acctIdx].TokensEntry[i].Commission),
-					FilterZeroValue(accounts.Entries[acctIdx].TokensEntry[i].Vesting),
-					FilterZeroValue(accounts.Entries[acctIdx].TokensEntry[i].DelegatedVesting),
-					FilterZeroValue(total),
-				})
-			} else {
-				t.AppendRow([]interface{}{
-					"",
-					"",
-					accounts.Entries[acctIdx].TokensEntry[i].DisplayName,
-					FilterZeroValue(accounts.Entries[acctIdx].TokensEntry[i].Balance),
-					FilterZeroValue(accounts.Entries[acctIdx].TokensEntry[i].Reward),
-					FilterZeroValue(accounts.Entries[acctIdx].TokensEntry[i].Delegation),
-					FilterZeroValue(accounts.Entries[acctIdx].TokensEntry[i].Unbonding),
-					FilterZeroValue(accounts.Entries[acctIdx].TokensEntry[i].Commission),
-					FilterZeroValue(accounts.Entries[acctIdx].TokensEntry[i].Vesting),
-					FilterZeroValue(accounts.Entries[acctIdx].TokensEntry[i].DelegatedVesting),
-					FilterZeroValue(total),
-				})
 			}
-
+			t.AppendSeparator()
 		}
-		t.AppendSeparator()
-	}
 
-	t.SetColumnConfigs([]table.ColumnConfig{
-		{Name: "Name", Align: text.AlignLeft, AlignHeader: text.AlignCenter},
-		{Name: "Account", Align: text.AlignLeft, AlignHeader: text.AlignCenter},
-		{Name: "Token", Align: text.AlignLeft, AlignHeader: text.AlignCenter},
-		{Name: "Balance", Align: text.AlignRight, AlignHeader: text.AlignCenter},
-		{Name: "Rewards", Align: text.AlignRight, AlignHeader: text.AlignCenter},
-		{Name: "Staked", Align: text.AlignRight, AlignHeader: text.AlignCenter},
-		{Name: "Unbonding", Align: text.AlignRight, AlignHeader: text.AlignCenter},
-		{Name: "Commissions", Align: text.AlignRight, AlignHeader: text.AlignCenter},
-		{Name: "Original Vesting", Align: text.AlignRight, AlignHeader: text.AlignCenter},
-		{Name: "Delegated Vesting", Align: text.AlignRight, AlignHeader: text.AlignCenter},
-		{Name: "Total", Align: text.AlignRight, AlignHeader: text.AlignCenter},
-	})
-	t.Render()
+		t.SetColumnConfigs([]table.ColumnConfig{
+			{Name: "Name", Align: text.AlignLeft, AlignHeader: text.AlignCenter},
+			{Name: "Account", Align: text.AlignLeft, AlignHeader: text.AlignCenter},
+			{Name: "Token", Align: text.AlignLeft, AlignHeader: text.AlignCenter},
+			{Name: "Balance", Align: text.AlignRight, AlignHeader: text.AlignCenter},
+			{Name: "Rewards", Align: text.AlignRight, AlignHeader: text.AlignCenter},
+			{Name: "Staked", Align: text.AlignRight, AlignHeader: text.AlignCenter},
+			{Name: "Unbonding", Align: text.AlignRight, AlignHeader: text.AlignCenter},
+			{Name: "Commissions", Align: text.AlignRight, AlignHeader: text.AlignCenter},
+			{Name: "Original Vesting", Align: text.AlignRight, AlignHeader: text.AlignCenter},
+			{Name: "Delegated Vesting", Align: text.AlignRight, AlignHeader: text.AlignCenter},
+			{Name: "Total", Align: text.AlignRight, AlignHeader: text.AlignCenter},
+		})
+		t.Render()
+	}
 	return
 }
 

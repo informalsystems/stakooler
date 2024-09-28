@@ -1,7 +1,7 @@
 package model
 
 type Chains struct {
-	Entries []Chain
+	Entries []*Chain
 }
 
 type Chain struct {
@@ -9,7 +9,7 @@ type Chain struct {
 	Id           string
 	RestEndpoint string
 	Bech32Prefix string
-	Accounts     []Account
+	Accounts     []*Account
 	Denom        string
 	Exponent     int
 	AssetList    *AssetList

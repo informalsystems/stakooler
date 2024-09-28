@@ -9,10 +9,10 @@ import (
 	"github.com/informalsystems/stakooler/client/cosmos/model"
 )
 
-func GetBalances(account *model.Account, client *http.Client, endpoint string) (response model.BalancesResponse, err error) {
+func GetBalances(address string, endpoint string, client *http.Client) (response model.BalancesResponse, err error) {
 	var body []byte
 
-	url := endpoint + "/cosmos/bank/v1beta1/balances/" + account.Address
+	url := endpoint + "/cosmos/bank/v1beta1/balances/" + address
 	body, err = cosmos.HttpGet(url, client)
 
 	err = json.Unmarshal(body, &response)

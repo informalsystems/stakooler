@@ -49,6 +49,7 @@ func LoadAuthData(account *model.Account, client *http.Client, chain *model.Chai
 						Vesting:     convertedAmount,
 					})
 				}
+				chain.Accounts = append(chain.Accounts, account)
 			}
 		}
 	}
@@ -76,16 +77,15 @@ func LoadAuthData(account *model.Account, client *http.Client, chain *model.Chai
 						DelegatedVesting: convertedAmount,
 					})
 				}
+				chain.Accounts = append(chain.Accounts, account)
 			}
 		}
 	}
-
 	return nil
 }
 
-/*
-func LoadBankBalances(account *model.Account, client *http.Client, endpoint string) error {
-	balancesResponse, err := api.GetBalances(account, client, endpoint)
+func LoadBankBalances(account *model.Account, client *http.Client, chain *model.Chain) error {
+	balancesResponse, err := api.GetBalances(account.Address, chain.RestEndpoint, client)
 	if err != nil {
 		return errors.New(fmt.Sprintf("failed to get balances: %s", err))
 	}
@@ -98,38 +98,37 @@ func LoadBankBalances(account *model.Account, client *http.Client, endpoint stri
 			continue
 		}
 
-		metadata := GetDenomMetadataFromBank(balance.Denom, *account, client)
+		metadata := GetDenomMetadata(balance.Denom, chain, client)
 		amount, err2 := strconv.ParseFloat(balance.Amount, 1)
 		if err2 != nil {
 			return errors.New(fmt.Sprintf("error converting balance amount: %s", err2))
 		} else {
-			var convertedAmount float64
 			if amount > zeroAmount {
-				convertedAmount = amount / math.Pow10(metadata.Precision)
-			} else {
-				convertedAmount = zeroAmount
-			}
-			foundToken := false
-			for j := range account.TokensEntry {
-				if strings.ToLower(account.TokensEntry[j].Denom) == strings.ToLower(balance.Denom) {
-					account.TokensEntry[j].Balance += convertedAmount
-					foundToken = true
+				convertedAmount := amount / math.Pow10(metadata.Precision)
+				foundToken := false
+				for j := range account.TokensEntry {
+					if strings.ToLower(account.TokensEntry[j].Denom) == strings.ToLower(balance.Denom) {
+						account.TokensEntry[j].Balance += convertedAmount
+						foundToken = true
+					}
 				}
-			}
-			// If there were no tokens of this denom yet, create one
-			if !foundToken {
-				account.TokensEntry = append(account.TokensEntry, model.TokenEntry{
-					DisplayName: metadata.Symbol,
-					Denom:       balance.Denom,
-					Balance:     convertedAmount,
-				})
+
+				// If there were no tokens of this denom yet, create one
+				if !foundToken {
+					account.TokensEntry = append(account.TokensEntry, model.TokenEntry{
+						DisplayName: metadata.Symbol,
+						Denom:       balance.Denom,
+						Balance:     convertedAmount,
+					})
+				}
+				chain.Accounts = append(chain.Accounts, account)
 			}
 		}
 	}
-
 	return nil
 }
 
+/*
 func LoadDistributionData(account *model.Account, client *http.Client) error {
 	rewardsResponse, err := api.GetRewards(account, client)
 	if err != nil {
