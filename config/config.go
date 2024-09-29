@@ -81,16 +81,26 @@ func ParseChainConfig(data *model.RawAccountData, httpClient *http.Client) query
 			AssetList:    &api.AssetList{},
 		}
 
+		if err := chainData.AssetList.GetAssetsList(chain.Name, httpClient); err != nil {
+			log.Error().Err(err).Msg("query asset list")
+		}
+
 		if prefix, err := api.GetPrefix(chainData.RestEndpoint, httpClient); err != nil {
-			log.Error().Err(err).Msg(fmt.Sprintf("cannot get chain prefix, skipping chain %s", chainData.Id))
-			continue
+			log.Error().Err(err).Msg(fmt.Sprintf("query chain prefix, trying asset list %s", chainData.Id))
+			chainDataRegistry := api.ChainData{}
+			if err = chainDataRegistry.GetChainData(chain.Name, httpClient); err != nil {
+				log.Error().Err(err).Msg(fmt.Sprintf("query chain data, skipping chain: %s", chainData.Id))
+				continue
+			} else {
+				chainData.Bech32Prefix = chainDataRegistry.Bech32Prefix
+			}
 		} else {
 			chainData.Bech32Prefix = prefix.Bech32Prefix
 		}
 
 		params, err := api.GetStakingParams(chainData.RestEndpoint, httpClient)
 		if err != nil {
-			log.Error().Err(err).Msg(fmt.Sprintf("cannot get chain prefix, skipping chain: %s", chainData.Id))
+			log.Error().Err(err).Msg(fmt.Sprintf("query staking paramas, skipping chain: %s", chainData.Id))
 		} else {
 			chainData.BondDenom = params.ParamsResponse.BondDenom
 		}

@@ -15,7 +15,7 @@ func PrintAccountDetailsTable(chains *query.Chains) {
 		t.SetOutputMirror(os.Stdout)
 		t.SetTitle(strings.ToUpper(fmt.Sprintf("Details for %s", chain.Name)))
 		t.SetCaption(fmt.Sprintf("Retrieved information for %d accounts", len(chain.Accounts)))
-		t.AppendHeader(table.Row{"Name", "Account", "Token", "BankBalance", "Rewards", "Staked", "Unbonding", "Commissions", "Original OriginalVesting", "Delegated OriginalVesting", "Total"})
+		t.AppendHeader(table.Row{"Name", "Account", "Token", "Balance", "Rewards", "Staked", "Unbonding", "Commissions", "Original Vesting", "Delegated Vesting", "Total"})
 
 		for _, account := range chain.Accounts {
 			for _, e := range account.Tokens {
@@ -47,8 +47,8 @@ func PrintAccountDetailsTable(chains *query.Chains) {
 			{Name: "Staked", Align: text.AlignRight, AlignHeader: text.AlignCenter},
 			{Name: "Unbonding", Align: text.AlignRight, AlignHeader: text.AlignCenter},
 			{Name: "Commissions", Align: text.AlignRight, AlignHeader: text.AlignCenter},
-			{Name: "Original OriginalVesting", Align: text.AlignRight, AlignHeader: text.AlignCenter},
-			{Name: "Delegated OriginalVesting", Align: text.AlignRight, AlignHeader: text.AlignCenter},
+			{Name: "Original Vesting", Align: text.AlignRight, AlignHeader: text.AlignCenter},
+			{Name: "Delegated Vesting", Align: text.AlignRight, AlignHeader: text.AlignCenter},
 			{Name: "Total", Align: text.AlignRight, AlignHeader: text.AlignCenter},
 		})
 		t.Render()

@@ -2,9 +2,6 @@ package api
 
 import (
 	"encoding/json"
-	"fmt"
-	"github.com/rs/zerolog/log"
-	"io"
 	"net/http"
 	"strings"
 )
@@ -23,6 +20,10 @@ type AssetList struct {
 	} `json:"assets"`
 }
 
+type ChainData struct {
+	Bech32Prefix string `json:"bech32_prefix"`
+}
+
 // SearchForAsset search for the symbol for a particular denom in the assets list
 func (a *AssetList) SearchForAsset(denom string) (string, int) {
 	for i := range a.Assets {
@@ -38,43 +39,32 @@ func (a *AssetList) SearchForAsset(denom string) (string, int) {
 }
 
 func (a *AssetList) GetAssetsList(chain string, client *http.Client) error {
+	var body []byte
 
 	url := "https://chains.cosmos.directory/" + chain + "/assetlist"
-	method := "GET"
-
-	req, err := http.NewRequest(method, url, nil)
+	body, err := HttpGet(url, client)
 	if err != nil {
-		log.Error().Err(err).Msg("could not create asset list request")
-		return err
-	}
-
-	res, err := client.Do(req)
-	if err != nil {
-		log.Error().Err(err).Msg("error when making asset list request")
-		return err
-	}
-
-	if res.StatusCode != http.StatusOK {
-		log.Error().Err(err).Msg(fmt.Sprintf("error when making asset list request, status: %d", res.StatusCode))
-		return err
-	}
-
-	defer func(Body io.ReadCloser) {
-		err2 := Body.Close()
-		if err2 != nil {
-			log.Error().Err(err2).Msg("error when closing asset list response body")
-		}
-	}(res.Body)
-
-	body, err := io.ReadAll(res.Body)
-	if err != nil {
-		log.Error().Err(err).Msg("error when reading asset list body")
 		return err
 	}
 
 	err = json.Unmarshal(body, a)
 	if err != nil {
-		log.Error().Err(err).Msg("error when unmarshalling asset list body")
+		return err
+	}
+	return nil
+}
+
+func (c *ChainData) GetChainData(chain string, client *http.Client) error {
+	var body []byte
+
+	url := "https://chains.cosmos.directory/" + chain + "/chain"
+	body, err := HttpGet(url, client)
+	if err != nil {
+		return err
+	}
+
+	err = json.Unmarshal(body, c)
+	if err != nil {
 		return err
 	}
 	return nil
