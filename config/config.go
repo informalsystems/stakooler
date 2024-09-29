@@ -82,7 +82,7 @@ func ParseChainConfig(data *model.RawAccountData, httpClient *http.Client) query
 		}
 
 		if err := chainData.AssetList.GetAssetsList(chain.Name, httpClient); err != nil {
-			log.Error().Err(err).Msg("query asset list")
+			log.Error().Err(err).Msg(fmt.Sprintf("query asset list: %s", chain.Id))
 		}
 
 		if prefix, err := api.GetPrefix(chainData.RestEndpoint, httpClient); err != nil {
