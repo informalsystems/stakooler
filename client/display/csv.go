@@ -33,7 +33,7 @@ func WriteAccountsCSV(chains *query.Chains) {
 				}
 			} else {
 				for i := range acct.Tokens {
-					total := entries[i].Balance + entries[i].Reward + entries[i].Delegation + entries[i].Unbonding + entries[i].Commission
+					total := entries[i].BankBalance + entries[i].Rewards + entries[i].Delegation + entries[i].Unbonding + entries[i].Commission
 					record := []string{
 						acct.Name,
 						acct.Address,
@@ -41,12 +41,12 @@ func WriteAccountsCSV(chains *query.Chains) {
 						acct.BlockHeight,
 						acct.BlockTime.Format(time.RFC3339Nano),
 						acct.Tokens[i].DisplayName,
-						fmt.Sprintf("%f", acct.Tokens[i].Balance),
-						fmt.Sprintf("%f", acct.Tokens[i].Reward),
+						fmt.Sprintf("%f", acct.Tokens[i].BankBalance),
+						fmt.Sprintf("%f", acct.Tokens[i].Rewards),
 						fmt.Sprintf("%f", acct.Tokens[i].Delegation),
 						fmt.Sprintf("%f", acct.Tokens[i].Unbonding),
 						fmt.Sprintf("%f", acct.Tokens[i].Commission),
-						fmt.Sprintf("%f", acct.Tokens[i].Vesting),
+						fmt.Sprintf("%f", acct.Tokens[i].OriginalVesting),
 						fmt.Sprintf("%f", acct.Tokens[i].DelegatedVesting),
 						fmt.Sprintf("%f", total),
 					}

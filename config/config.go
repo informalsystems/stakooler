@@ -78,6 +78,7 @@ func ParseChainConfig(data *model.RawAccountData, httpClient *http.Client) query
 			Name:         chain.Name,
 			Id:           chain.Id,
 			RestEndpoint: chain.Rest,
+			AssetList:    &api.AssetList{},
 		}
 
 		if prefix, err := api.GetPrefix(chainData.RestEndpoint, httpClient); err != nil {
@@ -119,6 +120,7 @@ func ParseChainConfig(data *model.RawAccountData, httpClient *http.Client) query
 					Name:    acct.Name,
 					Address: encodedAddr,
 					Valoper: encodeValoper,
+					Tokens:  make(map[string]*model.Token),
 				})
 			}
 		}

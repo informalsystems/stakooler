@@ -2,41 +2,6 @@ package model
 
 import "time"
 
-type Delegations struct {
-	DelegationResponses []struct {
-		Delegation struct {
-			DelegatorAddress string `json:"delegator_address"`
-			ValidatorAddress string `json:"validator_address"`
-			Shares           string `json:"shares"`
-		} `json:"delegation"`
-		Balance struct {
-			Denom  string `json:"denom"`
-			Amount string `json:"amount"`
-		} `json:"balance"`
-	} `json:"delegation_responses"`
-	Pagination struct {
-		NextKey interface{} `json:"next_key"`
-		Total   string      `json:"total"`
-	} `json:"pagination"`
-}
-
-type Unbondings struct {
-	UnbondingResponses []struct {
-		DelegatorAddress string `json:"delegator_address"`
-		ValidatorAddress string `json:"validator_address"`
-		Entries          []struct {
-			CreationHeight string    `json:"creation_height"`
-			CompletionTime time.Time `json:"completion_time"`
-			InitialBalance string    `json:"initial_balance"`
-			Balance        string    `json:"balance"`
-		} `json:"entries"`
-	} `json:"unbonding_responses"`
-	Pagination struct {
-		NextKey interface{} `json:"next_key"`
-		Total   string      `json:"total"`
-	} `json:"pagination"`
-}
-
 type Params struct {
 	ParamsResponse struct {
 		UnbondingTime     string `json:"unbonding_time"`

@@ -5,11 +5,69 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"time"
 
 	"github.com/informalsystems/stakooler/client/cosmos/model"
 )
 
-func GetDelegations(address string, endpoint string, client *http.Client) (response *model.Delegations, err error) {
+type Delegations struct {
+	DelegationResponses []struct {
+		Delegation struct {
+			DelegatorAddress string `json:"delegator_address"`
+			ValidatorAddress string `json:"validator_address"`
+			Shares           string `json:"shares"`
+		} `json:"delegation"`
+		Balance struct {
+			Denom  string `json:"denom"`
+			Amount string `json:"amount"`
+		} `json:"balance"`
+	} `json:"delegation_responses"`
+	Pagination struct {
+		NextKey interface{} `json:"next_key"`
+		Total   string      `json:"total"`
+	} `json:"pagination"`
+}
+
+type Unbondings struct {
+	UnbondingResponses []struct {
+		DelegatorAddress string `json:"delegator_address"`
+		ValidatorAddress string `json:"validator_address"`
+		Entries          []struct {
+			CreationHeight string    `json:"creation_height"`
+			CompletionTime time.Time `json:"completion_time"`
+			InitialBalance string    `json:"initial_balance"`
+			Balance        string    `json:"balance"`
+		} `json:"entries"`
+	} `json:"unbonding_responses"`
+	Pagination struct {
+		NextKey interface{} `json:"next_key"`
+		Total   string      `json:"total"`
+	} `json:"pagination"`
+}
+
+func (d *Delegations) GetBalances() map[int]map[string]string {
+	balances := make(map[int]map[string]string)
+	balances[Delegation] = make(map[string]string)
+
+	for _, balance := range d.DelegationResponses {
+		balances[Delegation][balance.Balance.Denom] = balance.Balance.Amount
+	}
+	return balances
+}
+
+func (u *Unbondings) GetBalances() map[int]map[string]string {
+	balances := make(map[int]map[string]string)
+	balances[Unbonding] = make(map[string]string)
+
+	for _, response := range u.UnbondingResponses {
+		for _, entry := range response.Entries {
+			balances[Unbonding]["denom"] = entry.Balance
+		}
+	}
+	return balances
+}
+
+func GetDelegations(address string, endpoint string, client *http.Client) (response *Delegations, err error) {
 	var body []byte
 
 	url := endpoint + "/cosmos/staking/v1beta1/delegations/" + address
@@ -18,7 +76,7 @@ func GetDelegations(address string, endpoint string, client *http.Client) (respo
 		return
 	}
 
-	response = &model.Delegations{}
+	response = &Delegations{}
 	err = json.Unmarshal(body, response)
 	if err != nil {
 		return
@@ -26,7 +84,7 @@ func GetDelegations(address string, endpoint string, client *http.Client) (respo
 	return
 }
 
-func GetUnbondings(address string, endpoint string, client *http.Client) (response *model.Unbondings, err error) {
+func GetUnbondings(address string, endpoint string, client *http.Client) (response *Unbondings, err error) {
 	var body []byte
 
 	url := endpoint + "/cosmos/staking/v1beta1/delegators/" + address + "/unbonding_delegations"
@@ -35,7 +93,7 @@ func GetUnbondings(address string, endpoint string, client *http.Client) (respon
 		return
 	}
 
-	response = &model.Unbondings{}
+	response = &Unbondings{}
 	err = json.Unmarshal(body, &response)
 	if err != nil {
 		return
@@ -94,8 +152,8 @@ func GetChainValidators(endpoint string) (model.Validators, error) {
 	return validators, nil
 }
 
-func GetValidatorUnbondings(endpoint string, address string) (model.Unbondings, error) {
-	var unbondings model.Unbondings
+func GetValidatorUnbondings(endpoint string, address string) (Unbondings, error) {
+	var unbondings Unbondings
 	url := endpoint + "/cosmos/staking/v1beta1/validators/" + address + "/unbonding_delegations"
 	method := "GET"
 
@@ -126,8 +184,8 @@ func GetValidatorUnbondings(endpoint string, address string) (model.Unbondings, 
 	return unbondings, nil
 }
 
-func GetValidatorDelegations(endpoint string, valoper string) (model.Delegations, error) {
-	var delegations model.Delegations
+func GetValidatorDelegations(endpoint string, valoper string) (Delegations, error) {
+	var delegations Delegations
 
 	url := endpoint + "/cosmos/staking/v1beta1/validators/" + valoper + "/delegations?pagination.limit=15000&pagination.count_total=true"
 	method := "GET"

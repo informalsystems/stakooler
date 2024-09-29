@@ -4,11 +4,54 @@ import (
 	"encoding/json"
 	"net/http"
 	"strings"
-
-	"github.com/informalsystems/stakooler/client/cosmos/model"
 )
 
-func GetRewards(address string, endpoint string, client *http.Client) (response *model.RewardsResponse, err error) {
+type RewardsResponse struct {
+	Rewards []struct {
+		ValidatorAddress string `json:"validator_address"`
+		Reward           []struct {
+			Denom  string `json:"denom"`
+			Amount string `json:"amount"`
+		} `json:"reward"`
+	} `json:"rewards"`
+	Total []struct {
+		Denom  string `json:"denom"`
+		Amount string `json:"amount"`
+	} `json:"total"`
+}
+
+type CommissionResponse struct {
+	Commissions struct {
+		Commission []struct {
+			Denom  string `json:"denom"`
+			Amount string `json:"amount"`
+		} `json:"commission"`
+	} `json:"commission"`
+}
+
+func (r *RewardsResponse) GetBalances() map[int]map[string]string {
+	balances := make(map[int]map[string]string)
+	balances[Rewards] = map[string]string{}
+
+	for _, rewards := range r.Rewards {
+		for _, reward := range rewards.Reward {
+			balances[Rewards][reward.Denom] = reward.Amount
+		}
+	}
+	return balances
+}
+
+func (c *CommissionResponse) GetBalances() map[int]map[string]string {
+	balances := make(map[int]map[string]string)
+	balances[Commission] = map[string]string{}
+
+	for _, commission := range c.Commissions.Commission {
+		balances[Commission][commission.Denom] = commission.Amount
+	}
+	return balances
+}
+
+func GetRewards(address string, endpoint string, client *http.Client) (response *RewardsResponse, err error) {
 	var body []byte
 
 	url := endpoint + "/cosmos/distribution/v1beta1/delegators/" + address + "/rewards"
@@ -17,7 +60,7 @@ func GetRewards(address string, endpoint string, client *http.Client) (response 
 		return
 	}
 
-	response = &model.RewardsResponse{}
+	response = &RewardsResponse{}
 	err = json.Unmarshal(body, response)
 	if err != nil {
 		return
@@ -25,7 +68,7 @@ func GetRewards(address string, endpoint string, client *http.Client) (response 
 	return
 }
 
-func GetCommissions(validator string, endpoint string, client *http.Client) (response *model.CommissionResponse, err error) {
+func GetCommissions(validator string, endpoint string, client *http.Client) (response *CommissionResponse, err error) {
 	var body []byte
 
 	url := endpoint + "/cosmos/distribution/v1beta1/validators/" + validator + "/commission"
@@ -38,7 +81,7 @@ func GetCommissions(validator string, endpoint string, client *http.Client) (res
 		}
 	}
 
-	response = &model.CommissionResponse{}
+	response = &CommissionResponse{}
 	err = json.Unmarshal(body, response)
 	if err != nil {
 		return

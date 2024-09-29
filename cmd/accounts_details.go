@@ -52,13 +52,14 @@ It shows tokens balance, rewards, delegation and unbonding values per account`,
 		}
 
 		for _, chain := range chains.Entries {
-			chain.AssetList, err = api.GetAssetsList(chain.Name, httpClient)
-			if err != nil {
+			chain.AssetList = &api.AssetList{}
+
+			if err := chain.AssetList.GetAssetsList(chain.Name, httpClient); err != nil {
 				log.Error().Err(err).Msg("error getting asset list")
 			}
 
-			blockInfo, err := api.GetLatestBlock(chain.RestEndpoint, httpClient)
-			if err != nil {
+			blockInfo := api.BlockResponse{}
+			if err := blockInfo.GetLatestBlock(chain.RestEndpoint, httpClient); err != nil {
 				log.Error().Err(err).Msg(fmt.Sprintf("failed to get latest block, skipping chain %s", chain.Id))
 			}
 

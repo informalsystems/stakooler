@@ -31,10 +31,10 @@ type Chain struct {
 	Accounts     []*model.Account
 	BondDenom    string
 	Exponent     int
-	AssetList    *model.AssetList
+	AssetList    *api.AssetList
 }
 
-func (c *Chain) FetchAccountBalances(blockInfo model.BlockResponse, client *http.Client) error {
+func (c *Chain) FetchAccountBalances(blockInfo api.BlockResponse, client *http.Client) error {
 	for idx := range c.Accounts {
 		c.Accounts[idx].BlockTime = blockInfo.Block.Header.Time
 		c.Accounts[idx].BlockHeight = blockInfo.Block.Header.Height
@@ -42,19 +42,15 @@ func (c *Chain) FetchAccountBalances(blockInfo model.BlockResponse, client *http
 		if acctResponse, err := api.GetAccount(c.Accounts[idx].Address, c.RestEndpoint, client); err != nil {
 			return errors.New(fmt.Sprintf("query account: %s", err))
 		} else {
-			if err = c.ProcessOriginalVesting(acctResponse, idx, client); err != nil {
-				return errors.New(fmt.Sprintf("process original vesting: %s", err))
-			}
-
-			if err = c.ProcessDelegatedVesting(acctResponse, idx, client); err != nil {
-				return errors.New(fmt.Sprintf("process delegated vesting: %s", err))
+			if err = c.ProcessResponse(acctResponse, idx, client); err != nil {
+				return errors.New(fmt.Sprintf("process vesting: %s", err))
 			}
 		}
 
 		if bankResponse, err := api.GetBalances(c.Accounts[idx].Address, c.RestEndpoint, client); err != nil {
 			return errors.New(fmt.Sprintf("query bank balances: %s", err))
 		} else {
-			if err = c.ProcessBankBalances(bankResponse, idx, client); err != nil {
+			if err = c.ProcessResponse(bankResponse, idx, client); err != nil {
 				return errors.New(fmt.Sprintf("process bank balances: %s", err))
 			}
 		}
@@ -62,7 +58,7 @@ func (c *Chain) FetchAccountBalances(blockInfo model.BlockResponse, client *http
 		if rewardsResponse, err := api.GetRewards(c.Accounts[idx].Address, c.RestEndpoint, client); err != nil {
 			return errors.New(fmt.Sprintf("query rewards: %s", err))
 		} else {
-			if err = c.ProcessRewards(rewardsResponse, idx, client); err != nil {
+			if err = c.ProcessResponse(rewardsResponse, idx, client); err != nil {
 				return errors.New(fmt.Sprintf("process rewards: %s", err))
 			}
 		}
@@ -70,7 +66,7 @@ func (c *Chain) FetchAccountBalances(blockInfo model.BlockResponse, client *http
 		if commissionResponse, err := api.GetCommissions(c.Accounts[idx].Valoper, c.RestEndpoint, client); err != nil {
 			return errors.New(fmt.Sprintf("query commissions: %s", err))
 		} else if commissionResponse != nil {
-			if err = c.ProcessCommission(commissionResponse, idx, client); err != nil {
+			if err = c.ProcessResponse(commissionResponse, idx, client); err != nil {
 				return errors.New(fmt.Sprintf("process commissions: %s", err))
 			}
 		}
@@ -78,7 +74,7 @@ func (c *Chain) FetchAccountBalances(blockInfo model.BlockResponse, client *http
 		if delegationsResponse, err := api.GetDelegations(c.Accounts[idx].Address, c.RestEndpoint, client); err != nil {
 			return errors.New(fmt.Sprintf("query delegations: %s", err))
 		} else {
-			if err = c.ProcessDelegations(delegationsResponse, idx, client); err != nil {
+			if err = c.ProcessResponse(delegationsResponse, idx, client); err != nil {
 				return errors.New(fmt.Sprintf("process delegations: %s", err))
 			}
 		}
@@ -86,7 +82,7 @@ func (c *Chain) FetchAccountBalances(blockInfo model.BlockResponse, client *http
 		if unbondingResponse, err := api.GetUnbondings(c.Accounts[idx].Address, c.RestEndpoint, client); err != nil {
 			return errors.New(fmt.Sprintf("query unbondings: %s", err))
 		} else {
-			if err = c.ProcessUnbondings(unbondingResponse, idx, client); err != nil {
+			if err = c.ProcessResponse(unbondingResponse, idx, client); err != nil {
 				return errors.New(fmt.Sprintf("process unbondings: %s", err))
 			}
 		}
@@ -94,235 +90,45 @@ func (c *Chain) FetchAccountBalances(blockInfo model.BlockResponse, client *http
 	return nil
 }
 
-func (c *Chain) ProcessOriginalVesting(resp *model.AcctResponse, idx int, client *http.Client) error {
-	for _, value := range resp.Account.BaseVestingAccount.OriginalVesting {
-		if strings.HasPrefix(strings.ToUpper(value.Denom), "GAMM/POOL/") ||
-			strings.HasPrefix(strings.ToUpper(value.Denom), "IBC/") {
-			continue
-		}
-		metadata := GetDenomMetadata(value.Denom, c, client)
-		amount, err := strconv.ParseFloat(value.Amount, 1)
-		if err != nil {
-			return err
-		}
-
-		if amount > zeroAmount {
-			convertedAmount := amount / math.Pow10(metadata.Precision)
-			foundToken := false
-			for j := range c.Accounts[idx].Tokens {
-				if strings.ToLower(c.Accounts[idx].Tokens[j].Denom) == strings.ToLower(value.Denom) {
-					c.Accounts[idx].Tokens[j].Vesting += convertedAmount
-					foundToken = true
-				}
+func (c *Chain) ProcessResponse(resp api.Response, idx int, client *http.Client) error {
+	for balanceType, balance := range resp.GetBalances() {
+		for denom, amount := range balance {
+			if strings.HasPrefix(strings.ToUpper(denom), "GAMM/POOL/") ||
+				strings.HasPrefix(strings.ToUpper(denom), "IBC/") {
+				continue
 			}
 
-			if !foundToken {
-				c.Accounts[idx].Tokens = append(c.Accounts[idx].Tokens, &model.Token{
-					DisplayName: metadata.Symbol,
-					Denom:       value.Denom,
-					Vesting:     convertedAmount,
-				})
-			}
-		}
-	}
-	return nil
-}
-
-func (c *Chain) ProcessDelegatedVesting(resp *model.AcctResponse, idx int, client *http.Client) error {
-	for _, value := range resp.Account.BaseVestingAccount.DelegatedVesting {
-		if strings.HasPrefix(strings.ToUpper(value.Denom), "GAMM/POOL/") ||
-			strings.HasPrefix(strings.ToUpper(value.Denom), "IBC/") {
-			continue
-		}
-		metadata := GetDenomMetadata(value.Denom, c, client)
-		amount, err := strconv.ParseFloat(value.Amount, 1)
-		if err != nil {
-			return err
-		} else {
-			if amount > zeroAmount {
-				convertedAmount := amount / math.Pow10(metadata.Precision)
-				foundToken := false
-				for j := range c.Accounts[idx].Tokens {
-					if strings.ToLower(c.Accounts[idx].Tokens[j].Denom) == strings.ToLower(value.Denom) {
-						c.Accounts[idx].Tokens[j].DelegatedVesting += convertedAmount
-						foundToken = true
-					}
-				}
-
-				if !foundToken {
-					c.Accounts[idx].Tokens = append(c.Accounts[idx].Tokens, &model.Token{
-						DisplayName:      metadata.Symbol,
-						Denom:            value.Denom,
-						DelegatedVesting: convertedAmount,
-					})
-				}
-			}
-		}
-	}
-	return nil
-}
-
-func (c *Chain) ProcessBankBalances(resp *model.BalancesResponse, idx int, client *http.Client) error {
-	for _, value := range resp.Balances {
-		if strings.HasPrefix(strings.ToUpper(value.Denom), "GAMM/POOL/") ||
-			strings.HasPrefix(strings.ToUpper(value.Denom), "IBC/") {
-			continue
-		}
-		metadata := GetDenomMetadata(value.Denom, c, client)
-		amount, err := strconv.ParseFloat(value.Amount, 1)
-		if err != nil {
-			return err
-		} else {
-			if amount > zeroAmount {
-				convertedAmount := amount / math.Pow10(metadata.Precision)
-				foundToken := false
-				for j := range c.Accounts[idx].Tokens {
-					if strings.ToLower(c.Accounts[idx].Tokens[j].Denom) == strings.ToLower(value.Denom) {
-						c.Accounts[idx].Tokens[j].Balance += convertedAmount
-						foundToken = true
-					}
-				}
-
-				if !foundToken {
-					c.Accounts[idx].Tokens = append(c.Accounts[idx].Tokens, &model.Token{
-						DisplayName: metadata.Symbol,
-						Denom:       value.Denom,
-						Balance:     convertedAmount,
-					})
-				}
-			}
-		}
-	}
-	return nil
-}
-
-func (c *Chain) ProcessRewards(resp *model.RewardsResponse, idx int, client *http.Client) error {
-	for _, value := range resp.Total {
-		if strings.HasPrefix(strings.ToUpper(value.Denom), "GAMM/POOL/") ||
-			strings.HasPrefix(strings.ToUpper(value.Denom), "IBC/") {
-			continue
-		}
-		metadata := GetDenomMetadata(value.Denom, c, client)
-		amount, err := strconv.ParseFloat(value.Amount, 1)
-		if err != nil {
-			return err
-		} else {
-			if amount > zeroAmount {
-				convertedAmount := amount / math.Pow10(metadata.Precision)
-				foundToken := false
-				for j := range c.Accounts[idx].Tokens {
-					if strings.ToLower(c.Accounts[idx].Tokens[j].Denom) == strings.ToLower(value.Denom) {
-						c.Accounts[idx].Tokens[j].Reward += convertedAmount
-						foundToken = true
-					}
-				}
-
-				if !foundToken {
-					c.Accounts[idx].Tokens = append(c.Accounts[idx].Tokens, &model.Token{
-						DisplayName: metadata.Symbol,
-						Denom:       value.Denom,
-						Reward:      convertedAmount,
-					})
-				}
-			}
-		}
-	}
-	return nil
-}
-
-func (c *Chain) ProcessCommission(resp *model.CommissionResponse, idx int, client *http.Client) error {
-	for _, value := range resp.Commissions.Commission {
-		if strings.HasPrefix(strings.ToUpper(value.Denom), "GAMM/POOL/") ||
-			strings.HasPrefix(strings.ToUpper(value.Denom), "IBC/") {
-			continue
-		}
-		metadata := GetDenomMetadata(value.Denom, c, client)
-		amount, err := strconv.ParseFloat(value.Amount, 1)
-		if err != nil {
-			return err
-		} else {
-			if amount > zeroAmount {
-				convertedAmount := amount / math.Pow10(metadata.Precision)
-				foundToken := false
-				for j := range c.Accounts[idx].Tokens {
-					if strings.ToLower(c.Accounts[idx].Tokens[j].Denom) == strings.ToLower(value.Denom) {
-						c.Accounts[idx].Tokens[j].Commission += convertedAmount
-						foundToken = true
-					}
-				}
-
-				if !foundToken {
-					c.Accounts[idx].Tokens = append(c.Accounts[idx].Tokens, &model.Token{
-						DisplayName: metadata.Symbol,
-						Denom:       value.Denom,
-						Commission:  convertedAmount,
-					})
-				}
-			}
-		}
-	}
-	return nil
-}
-
-func (c *Chain) ProcessDelegations(resp *model.Delegations, idx int, client *http.Client) error {
-	for _, value := range resp.DelegationResponses {
-		if strings.HasPrefix(strings.ToUpper(value.Balance.Denom), "GAMM/POOL/") ||
-			strings.HasPrefix(strings.ToUpper(value.Balance.Denom), "IBC/") {
-			continue
-		}
-		metadata := GetDenomMetadata(value.Balance.Denom, c, client)
-		amount, err := strconv.ParseFloat(value.Balance.Amount, 1)
-		if err != nil {
-			return err
-		} else {
-			if amount > zeroAmount {
-				convertedAmount := amount / math.Pow10(metadata.Precision)
-				foundToken := false
-				for j := range c.Accounts[idx].Tokens {
-					if strings.ToLower(c.Accounts[idx].Tokens[j].Denom) == strings.ToLower(value.Balance.Denom) {
-						c.Accounts[idx].Tokens[j].Delegation += convertedAmount
-						foundToken = true
-					}
-				}
-
-				if !foundToken {
-					c.Accounts[idx].Tokens = append(c.Accounts[idx].Tokens, &model.Token{
-						DisplayName: metadata.Symbol,
-						Denom:       value.Balance.Denom,
-						Delegation:  convertedAmount,
-					})
-				}
-			}
-		}
-	}
-	return nil
-}
-
-func (c *Chain) ProcessUnbondings(resp *model.Unbondings, idx int, client *http.Client) error {
-	for _, value := range resp.UnbondingResponses {
-		for _, entry := range value.Entries {
-			metadata := GetDenomMetadata(c.BondDenom, c, client)
-			amount, err := strconv.ParseFloat(entry.Balance, 1)
+			metadata := GetDenomMetadata(denom, c, client)
+			floatAmount, err := strconv.ParseFloat(amount, 1)
 			if err != nil {
 				return err
-			} else {
-				if amount > zeroAmount {
-					convertedAmount := amount / math.Pow10(metadata.Precision)
-					foundToken := false
-					for j := range c.Accounts[idx].Tokens {
-						if strings.ToLower(c.Accounts[idx].Tokens[j].Denom) == strings.ToLower(c.BondDenom) {
-							c.Accounts[idx].Tokens[j].Unbonding += convertedAmount
-							foundToken = true
-						}
-					}
+			}
 
-					if !foundToken {
-						c.Accounts[idx].Tokens = append(c.Accounts[idx].Tokens, &model.Token{
-							DisplayName: metadata.Symbol,
-							Denom:       c.BondDenom,
-							Delegation:  convertedAmount,
-						})
+			if floatAmount > zeroAmount {
+				convertedAmmount := floatAmount / math.Pow10(metadata.Precision)
+
+				if _, ok := c.Accounts[idx].Tokens[denom]; !ok {
+					c.Accounts[idx].Tokens[denom] = &model.Token{
+						DisplayName: metadata.Symbol,
+						Denom:       denom,
 					}
+				}
+
+				switch balanceType {
+				case api.OriginalVesting:
+					c.Accounts[idx].Tokens[denom].OriginalVesting += convertedAmmount
+				case api.DelegatedVesting:
+					c.Accounts[idx].Tokens[denom].DelegatedVesting += convertedAmmount
+				case api.Bank:
+					c.Accounts[idx].Tokens[denom].BankBalance += convertedAmmount
+				case api.Rewards:
+					c.Accounts[idx].Tokens[denom].Rewards += convertedAmmount
+				case api.Commission:
+					c.Accounts[idx].Tokens[denom].Commission += convertedAmmount
+				case api.Delegation:
+					c.Accounts[idx].Tokens[denom].Delegation += convertedAmmount
+				case api.Unbonding:
+					c.Accounts[idx].Tokens[denom].Unbonding += convertedAmmount
 				}
 			}
 		}
@@ -337,7 +143,7 @@ func GetDenomMetadata(denom string, chain *Chain, client *http.Client) TokenDeta
 	exponent := 0
 
 	if chain.AssetList != nil {
-		symbol, exponent = chain.AssetList.GetAssetDetails(denom)
+		symbol, exponent = chain.AssetList.SearchForAsset(denom)
 	}
 	// in case asset details are missing
 	if exponent == 0 {

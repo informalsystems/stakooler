@@ -15,39 +15,24 @@ func PrintAccountDetailsTable(chains *query.Chains) {
 		t.SetOutputMirror(os.Stdout)
 		t.SetTitle(strings.ToUpper(fmt.Sprintf("Details for %s", chain.Name)))
 		t.SetCaption(fmt.Sprintf("Retrieved information for %d accounts", len(chain.Accounts)))
-		t.AppendHeader(table.Row{"Name", "Account", "Token", "Balance", "Rewards", "Staked", "Unbonding", "Commissions", "Original Vesting", "Delegated Vesting", "Total"})
+		t.AppendHeader(table.Row{"Name", "Account", "Token", "BankBalance", "Rewards", "Staked", "Unbonding", "Commissions", "Original OriginalVesting", "Delegated OriginalVesting", "Total"})
 
 		for _, account := range chain.Accounts {
-			for idx, e := range account.Tokens {
-				total := e.Vesting - e.DelegatedVesting + e.Balance + e.Reward + e.Delegation + e.Unbonding + e.Commission
-				if idx == 0 {
-					t.AppendRow([]interface{}{
-						account.Name,
-						account.Address,
-						e.DisplayName,
-						FilterZeroValue(e.Balance),
-						FilterZeroValue(e.Reward),
-						FilterZeroValue(e.Delegation),
-						FilterZeroValue(e.Unbonding),
-						FilterZeroValue(e.Commission),
-						FilterZeroValue(e.Vesting),
-						FilterZeroValue(e.DelegatedVesting),
-						FilterZeroValue(total),
-					})
-				} else {
-					t.AppendRow([]interface{}{
-						"",
-						"",
-						FilterZeroValue(e.Balance),
-						FilterZeroValue(e.Reward),
-						FilterZeroValue(e.Delegation),
-						FilterZeroValue(e.Unbonding),
-						FilterZeroValue(e.Commission),
-						FilterZeroValue(e.Vesting),
-						FilterZeroValue(e.DelegatedVesting),
-						FilterZeroValue(total),
-					})
-				}
+			for _, e := range account.Tokens {
+				total := e.OriginalVesting - e.DelegatedVesting + e.BankBalance + e.Rewards + e.Delegation + e.Unbonding + e.Commission
+				t.AppendRow([]interface{}{
+					account.Name,
+					account.Address,
+					e.DisplayName,
+					FilterZeroValue(e.BankBalance),
+					FilterZeroValue(e.Rewards),
+					FilterZeroValue(e.Delegation),
+					FilterZeroValue(e.Unbonding),
+					FilterZeroValue(e.Commission),
+					FilterZeroValue(e.OriginalVesting),
+					FilterZeroValue(e.DelegatedVesting),
+					FilterZeroValue(total),
+				})
 
 			}
 			t.AppendSeparator()
@@ -57,13 +42,13 @@ func PrintAccountDetailsTable(chains *query.Chains) {
 			{Name: "Name", Align: text.AlignLeft, AlignHeader: text.AlignCenter},
 			{Name: "Account", Align: text.AlignLeft, AlignHeader: text.AlignCenter},
 			{Name: "Token", Align: text.AlignLeft, AlignHeader: text.AlignCenter},
-			{Name: "Balance", Align: text.AlignRight, AlignHeader: text.AlignCenter},
+			{Name: "BankBalance", Align: text.AlignRight, AlignHeader: text.AlignCenter},
 			{Name: "Rewards", Align: text.AlignRight, AlignHeader: text.AlignCenter},
 			{Name: "Staked", Align: text.AlignRight, AlignHeader: text.AlignCenter},
 			{Name: "Unbonding", Align: text.AlignRight, AlignHeader: text.AlignCenter},
 			{Name: "Commissions", Align: text.AlignRight, AlignHeader: text.AlignCenter},
-			{Name: "Original Vesting", Align: text.AlignRight, AlignHeader: text.AlignCenter},
-			{Name: "Delegated Vesting", Align: text.AlignRight, AlignHeader: text.AlignCenter},
+			{Name: "Original OriginalVesting", Align: text.AlignRight, AlignHeader: text.AlignCenter},
+			{Name: "Delegated OriginalVesting", Align: text.AlignRight, AlignHeader: text.AlignCenter},
 			{Name: "Total", Align: text.AlignRight, AlignHeader: text.AlignCenter},
 		})
 		t.Render()

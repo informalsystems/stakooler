@@ -59,8 +59,8 @@ package query
 	for _, unbonding := range unbondings.UnbondingResponses {
 
 		for _, entry := range unbonding.Entries {
-			if len(entry.Balance) > validator.Chain.Exponent {
-				unbonding := entry.Balance[:len(entry.Balance)-validator.Chain.Exponent]
+			if len(entry.BankBalance) > validator.Chain.Exponent {
+				unbonding := entry.BankBalance[:len(entry.BankBalance)-validator.Chain.Exponent]
 				if unbonding != "" {
 					unbondingConverted, err := strconv.ParseInt(unbonding, 10, 64)
 					if err != nil {

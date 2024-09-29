@@ -4,17 +4,49 @@ import (
 	"encoding/json"
 	"net/http"
 	"strings"
-
-	"github.com/informalsystems/stakooler/client/cosmos/model"
 )
 
-func GetBalances(address string, endpoint string, client *http.Client) (response *model.BalancesResponse, err error) {
+type BankResponse struct {
+	Balances []struct {
+		Denom  string `json:"denom"`
+		Amount string `json:"amount"`
+	} `json:"balances"`
+	Pagination struct {
+		NextKey interface{} `json:"next_key"`
+		Total   string      `json:"total"`
+	} `json:"pagination"`
+}
+
+type DenomMetadataResponse struct {
+	Metadata struct {
+		Description string `json:"description"`
+		DenomUnits  []struct {
+			Denom    string   `json:"denom"`
+			Exponent int      `json:"exponent"`
+			Aliases  []string `json:"aliases"`
+		} `json:"denom_units"`
+		Base    string `json:"base"`
+		Display string `json:"display"`
+	} `json:"metadata"`
+}
+
+func (b *BankResponse) GetBalances() map[int]map[string]string {
+	balances := make(map[int]map[string]string)
+	balances[Bank] = map[string]string{}
+
+	for _, balance := range b.Balances {
+		balances[Bank][balance.Denom] = balance.Amount
+	}
+	return balances
+}
+
+func GetBalances(address string, endpoint string, client *http.Client) (response *BankResponse, err error) {
 	var body []byte
 
 	url := endpoint + "/cosmos/bank/v1beta1/balances/" + address
 	body, err = HttpGet(url, client)
 
-	response = &model.BalancesResponse{}
+	response = &BankResponse{}
 	err = json.Unmarshal(body, response)
 	if err != nil {
 		return
@@ -22,7 +54,7 @@ func GetBalances(address string, endpoint string, client *http.Client) (response
 	return
 }
 
-func GetDenomMetadataFromBank(denom string, endpoint string, client *http.Client) (response model.DenomMetadataResponse, err error) {
+func GetDenomMetadataFromBank(denom string, endpoint string, client *http.Client) (response DenomMetadataResponse, err error) {
 	var body []byte
 
 	url := endpoint + "/cosmos/bank/v1beta1/denoms_metadata/" + denom
@@ -38,7 +70,7 @@ func GetDenomMetadataFromBank(denom string, endpoint string, client *http.Client
 	return
 }
 
-func GetExponent(metadata *model.DenomMetadataResponse) int {
+func GetExponent(metadata *DenomMetadataResponse) int {
 	exponent := 0
 	for _, d := range metadata.Metadata.DenomUnits {
 		if strings.ToUpper(d.Denom) == strings.ToUpper(metadata.Metadata.Display) {
