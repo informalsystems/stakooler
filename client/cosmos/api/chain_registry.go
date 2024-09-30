@@ -30,7 +30,11 @@ func (a *AssetList) SearchForAsset(denom string) (string, int) {
 		if a.Assets[i].Base == denom {
 			for j := range a.Assets[i].DenomUnits {
 				if strings.ToUpper(a.Assets[i].DenomUnits[j].Denom) == strings.ToUpper(a.Assets[i].Display) {
-					return a.Assets[i].Symbol, a.Assets[i].DenomUnits[j].Exponent
+					// Some chains (*cough* Injective *cough*) have decided to differentiate between denom units
+					// using letter casing...
+					if a.Assets[i].DenomUnits[j].Exponent != 0 {
+						return a.Assets[i].Symbol, a.Assets[i].DenomUnits[j].Exponent
+					}
 				}
 			}
 		}

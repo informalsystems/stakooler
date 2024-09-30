@@ -94,6 +94,9 @@ func ParseChainConfig(data *model.RawAccountData, httpClient *http.Client) query
 			} else {
 				chainData.Bech32Prefix = chainDataRegistry.Bech32Prefix
 			}
+		} else if chain.Name == "panacea" {
+			// mediblock incorrectly shows cosmos as the prefix, so here we are, setting it manually
+			chainData.Bech32Prefix = "panacea"
 		} else {
 			chainData.Bech32Prefix = prefix.Bech32Prefix
 		}

@@ -56,8 +56,15 @@ func GetBalances(address string, endpoint string, client *http.Client) (response
 
 func GetDenomMetadataFromBank(denom string, endpoint string, client *http.Client) (response DenomMetadataResponse, err error) {
 	var body []byte
+	var url string
 
-	url := endpoint + "/cosmos/bank/v1beta1/denoms_metadata/" + denom
+	// This is here because of injective does not implement the original query
+	if strings.HasPrefix(denom, "factory/inj") {
+		url = endpoint + "/cosmos/bank/v1beta1/denoms_metadata_by_query_string?denom=" + denom
+	} else {
+		url = endpoint + "/cosmos/bank/v1beta1/denoms_metadata/" + denom
+	}
+
 	body, err = HttpGet(url, client)
 	if err != nil {
 		return

@@ -62,7 +62,7 @@ It shows tokens balance, rewards, delegation and unbonding values per account`,
 			}
 
 			if err = chain.FetchAccountBalances(blockInfo, httpClient); err != nil {
-				log.Error().Err(err).Msg("failed fetching accounts")
+				log.Error().Err(err).Msg(fmt.Sprintf("failed fetching accounts for %s", chain.Name))
 			}
 			bar.Add(1)
 		}

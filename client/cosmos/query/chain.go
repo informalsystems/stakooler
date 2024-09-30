@@ -10,6 +10,8 @@ import (
 
 	"github.com/informalsystems/stakooler/client/cosmos/api"
 	"github.com/informalsystems/stakooler/client/cosmos/model"
+
+	"github.com/rs/zerolog/log"
 )
 
 const zeroAmount = 0.00000
@@ -40,6 +42,10 @@ func (c *Chain) FetchAccountBalances(blockInfo api.BlockResponse, client *http.C
 		c.Accounts[idx].BlockHeight = blockInfo.Block.Header.Height
 
 		if acctResponse, err := api.GetAccount(c.Accounts[idx].Address, c.RestEndpoint, client); err != nil {
+			if strings.Contains(err.Error(), "404") {
+				log.Error().Msg(fmt.Sprintf("account %s not found", c.Accounts[idx].Name))
+				continue
+			}
 			return errors.New(fmt.Sprintf("query account: %s", err))
 		} else {
 			if err = c.ProcessResponse(acctResponse, idx, client); err != nil {
