@@ -40,21 +40,20 @@ func (b *BankResponse) GetBalances() map[int]map[string]string {
 	return balances
 }
 
-func GetBalances(address string, endpoint string, client *http.Client) (response *BankResponse, err error) {
+func (b *BankResponse) QueryBankBalances(address string, endpoint string, client *http.Client) error {
 	var body []byte
 
 	url := endpoint + "/cosmos/bank/v1beta1/balances/" + address
-	body, err = HttpGet(url, client)
+	body, err := HttpGet(url, client)
 
-	response = &BankResponse{}
-	err = json.Unmarshal(body, response)
+	err = json.Unmarshal(body, b)
 	if err != nil {
-		return
+		return err
 	}
-	return
+	return nil
 }
 
-func GetDenomMetadataFromBank(denom string, endpoint string, client *http.Client) (response DenomMetadataResponse, err error) {
+func (d *DenomMetadataResponse) QueryMetadataFromBank(denom string, endpoint string, client *http.Client) error {
 	var body []byte
 	var url string
 
@@ -65,24 +64,23 @@ func GetDenomMetadataFromBank(denom string, endpoint string, client *http.Client
 		url = endpoint + "/cosmos/bank/v1beta1/denoms_metadata/" + denom
 	}
 
-	body, err = HttpGet(url, client)
+	body, err := HttpGet(url, client)
 	if err != nil {
-		return
+		return err
 	}
 
-	err = json.Unmarshal(body, &response)
+	err = json.Unmarshal(body, d)
 	if err != nil {
-		return
+		return err
 	}
-	return
+	return err
 }
 
-func GetExponent(metadata *DenomMetadataResponse) int {
-	exponent := 0
-	for _, d := range metadata.Metadata.DenomUnits {
-		if strings.ToUpper(d.Denom) == strings.ToUpper(metadata.Metadata.Display) {
-			return d.Exponent
+func (d *DenomMetadataResponse) GetExponent() int {
+	for _, unit := range d.Metadata.DenomUnits {
+		if strings.ToUpper(unit.Denom) == strings.ToUpper(d.Metadata.Display) {
+			return unit.Exponent
 		}
 	}
-	return exponent
+	return 0
 }

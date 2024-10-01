@@ -34,12 +34,12 @@ It shows tokens balance, rewards, delegation and unbonding values per account`,
 		var bar *progressbar.ProgressBar
 
 		httpClient := api.NewHttpClient()
-		chains := config.ParseChainConfig(rawAcctData, httpClient)
+		chains := config.ParseAccountsConfig(rawAcctData, httpClient)
 
 		if barEnabled {
 			// Progress bar
 			// iterations are the api calls number times the number of accounts
-			totalIterations := len(chains.Entries)
+			totalIterations := len(chains)
 			bar = progressbar.NewOptions(totalIterations, progressbar.OptionEnableColorCodes(true), progressbar.OptionShowBytes(false), progressbar.OptionSetWidth(25), progressbar.OptionUseANSICodes(false), progressbar.OptionClearOnFinish(), progressbar.OptionSetPredictTime(false), progressbar.OptionSetTheme(progressbar.Theme{
 				Saucer:        "▪︎[reset]",
 				SaucerHead:    ">[reset]",
@@ -51,7 +51,7 @@ It shows tokens balance, rewards, delegation and unbonding values per account`,
 			bar = progressbar.New(0)
 		}
 
-		for _, chain := range chains.Entries {
+		for _, chain := range chains {
 			blockInfo := api.BlockResponse{}
 			if err := blockInfo.GetLatestBlock(chain.RestEndpoint, httpClient); err != nil {
 				log.Error().Err(err).Msg(fmt.Sprintf("failed to get latest block, skipping chain %s", chain.Id))
@@ -72,13 +72,13 @@ It shows tokens balance, rewards, delegation and unbonding values per account`,
 		}
 
 		if *flagCsv {
-			display.WriteAccountsCSV(&chains)
+			display.WriteAccountsCSV(chains)
 		} else if *flagZbxAcctDetails {
 			//			display.ZbxSendChainDiscovery(&tomlConfig)
 			//			display.ZbxSendAccountsDiscovery(&tomlConfig)
 			//			display.ZbxAccountsDetails(&tomlConfig)
 		} else {
-			display.PrintAccountDetailsTable(&chains)
+			display.PrintAccountDetailsTable(chains)
 		}
 	},
 }

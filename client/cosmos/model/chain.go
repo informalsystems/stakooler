@@ -1,4 +1,4 @@
-package query
+package model
 
 import (
 	"errors"
@@ -9,28 +9,17 @@ import (
 	"strings"
 
 	"github.com/informalsystems/stakooler/client/cosmos/api"
-	"github.com/informalsystems/stakooler/client/cosmos/model"
-
 	"github.com/rs/zerolog/log"
 )
 
 const zeroAmount = 0.00000
-
-type TokenDetail struct {
-	Symbol    string
-	Precision int
-}
-
-type Chains struct {
-	Entries []*Chain
-}
 
 type Chain struct {
 	Name         string
 	Id           string
 	RestEndpoint string
 	Bech32Prefix string
-	Accounts     []*model.Account
+	Accounts     []*Account
 	BondDenom    string
 	Exponent     int
 	AssetList    *api.AssetList
@@ -41,54 +30,60 @@ func (c *Chain) FetchAccountBalances(blockInfo api.BlockResponse, client *http.C
 		c.Accounts[idx].BlockTime = blockInfo.Block.Header.Time
 		c.Accounts[idx].BlockHeight = blockInfo.Block.Header.Height
 
-		if acctResponse, err := api.GetAccount(c.Accounts[idx].Address, c.RestEndpoint, client); err != nil {
+		acct := api.AcctResponse{}
+		if err := acct.QueryAuth(c.Accounts[idx].Address, c.RestEndpoint, client); err != nil {
 			if strings.Contains(err.Error(), "404") {
 				log.Error().Msg(fmt.Sprintf("account %s not found", c.Accounts[idx].Name))
 				continue
 			}
 			return errors.New(fmt.Sprintf("query account: %s", err))
 		} else {
-			if err = c.ProcessResponse(acctResponse, idx, client); err != nil {
+			if err = c.ParseAcctQueryResp(&acct, idx, client); err != nil {
 				return errors.New(fmt.Sprintf("process vesting: %s", err))
 			}
 		}
 
-		if bankResponse, err := api.GetBalances(c.Accounts[idx].Address, c.RestEndpoint, client); err != nil {
+		bank := &api.BankResponse{}
+		if err := bank.QueryBankBalances(c.Accounts[idx].Address, c.RestEndpoint, client); err != nil {
 			return errors.New(fmt.Sprintf("query bank balances: %s", err))
 		} else {
-			if err = c.ProcessResponse(bankResponse, idx, client); err != nil {
+			if err = c.ParseAcctQueryResp(bank, idx, client); err != nil {
 				return errors.New(fmt.Sprintf("process bank balances: %s", err))
 			}
 		}
 
-		if rewardsResponse, err := api.GetRewards(c.Accounts[idx].Address, c.RestEndpoint, client); err != nil {
+		rewards := &api.RewardsResponse{}
+		if err := rewards.QueryRewards(c.Accounts[idx].Address, c.RestEndpoint, client); err != nil {
 			return errors.New(fmt.Sprintf("query rewards: %s", err))
 		} else {
-			if err = c.ProcessResponse(rewardsResponse, idx, client); err != nil {
+			if err = c.ParseAcctQueryResp(rewards, idx, client); err != nil {
 				return errors.New(fmt.Sprintf("process rewards: %s", err))
 			}
 		}
 
-		if commissionResponse, err := api.GetCommissions(c.Accounts[idx].Valoper, c.RestEndpoint, client); err != nil {
+		commission := &api.CommissionResponse{}
+		if err := commission.QueryCommission(c.Accounts[idx].Valoper, c.RestEndpoint, client); err != nil {
 			return errors.New(fmt.Sprintf("query commissions: %s", err))
-		} else if commissionResponse != nil {
-			if err = c.ProcessResponse(commissionResponse, idx, client); err != nil {
+		} else if commission.Commissions.Commission != nil {
+			if err = c.ParseAcctQueryResp(commission, idx, client); err != nil {
 				return errors.New(fmt.Sprintf("process commissions: %s", err))
 			}
 		}
 
-		if delegationsResponse, err := api.GetDelegations(c.Accounts[idx].Address, c.RestEndpoint, client); err != nil {
+		delegation := &api.Delegations{}
+		if err := delegation.QueryDelegations(c.Accounts[idx].Address, c.RestEndpoint, client); err != nil {
 			return errors.New(fmt.Sprintf("query delegations: %s", err))
 		} else {
-			if err = c.ProcessResponse(delegationsResponse, idx, client); err != nil {
+			if err = c.ParseAcctQueryResp(delegation, idx, client); err != nil {
 				return errors.New(fmt.Sprintf("process delegations: %s", err))
 			}
 		}
 
-		if unbondingResponse, err := api.GetUnbondings(c.Accounts[idx].Address, c.RestEndpoint, client); err != nil {
+		unbondings := &api.Unbondings{}
+		if err := unbondings.QueryUnbondings(c.Accounts[idx].Address, c.RestEndpoint, client); err != nil {
 			return errors.New(fmt.Sprintf("query unbondings: %s", err))
 		} else {
-			if err = c.ProcessResponse(unbondingResponse, idx, client); err != nil {
+			if err = c.ParseAcctQueryResp(unbondings, idx, client); err != nil {
 				return errors.New(fmt.Sprintf("process unbondings: %s", err))
 			}
 		}
@@ -96,45 +91,47 @@ func (c *Chain) FetchAccountBalances(blockInfo api.BlockResponse, client *http.C
 	return nil
 }
 
-func (c *Chain) ProcessResponse(resp api.Response, idx int, client *http.Client) error {
+func (c *Chain) ParseAcctQueryResp(resp api.AccountQueryResponse, idx int, client *http.Client) error {
 	for balanceType, balance := range resp.GetBalances() {
 		for denom, amount := range balance {
 			if strings.HasPrefix(strings.ToUpper(denom), "GAMM/POOL/") ||
-				strings.HasPrefix(strings.ToUpper(denom), "IBC/") {
+				strings.HasPrefix(strings.ToUpper(denom), "IBC/") ||
+				strings.HasPrefix(strings.ToUpper(denom), "FACTORY/") ||
+				strings.HasPrefix(strings.ToUpper(denom), "ST") {
 				continue
 			}
 
-			metadata := GetDenomMetadata(denom, c, client)
+			symbol, exponent := GetDenomMetadata(denom, c, client)
 			floatAmount, err := strconv.ParseFloat(amount, 1)
 			if err != nil {
 				return err
 			}
 
 			if floatAmount > zeroAmount {
-				convertedAmmount := floatAmount / math.Pow10(metadata.Precision)
+				convertedAmmount := floatAmount / math.Pow10(exponent)
 
 				if _, ok := c.Accounts[idx].Tokens[denom]; !ok {
-					c.Accounts[idx].Tokens[denom] = &model.Token{
-						DisplayName: metadata.Symbol,
+					c.Accounts[idx].Tokens[denom] = &Token{
+						DisplayName: symbol,
 						Denom:       denom,
 					}
 				}
 
 				switch balanceType {
 				case api.OriginalVesting:
-					c.Accounts[idx].Tokens[denom].OriginalVesting += convertedAmmount
+					c.Accounts[idx].Tokens[denom].Balances.OriginalVesting += convertedAmmount
 				case api.DelegatedVesting:
-					c.Accounts[idx].Tokens[denom].DelegatedVesting += convertedAmmount
+					c.Accounts[idx].Tokens[denom].Balances.DelegatedVesting += convertedAmmount
 				case api.Bank:
-					c.Accounts[idx].Tokens[denom].BankBalance += convertedAmmount
+					c.Accounts[idx].Tokens[denom].Balances.Bank += convertedAmmount
 				case api.Rewards:
-					c.Accounts[idx].Tokens[denom].Rewards += convertedAmmount
+					c.Accounts[idx].Tokens[denom].Balances.Rewards += convertedAmmount
 				case api.Commission:
-					c.Accounts[idx].Tokens[denom].Commission += convertedAmmount
+					c.Accounts[idx].Tokens[denom].Balances.Commission += convertedAmmount
 				case api.Delegation:
-					c.Accounts[idx].Tokens[denom].Delegation += convertedAmmount
+					c.Accounts[idx].Tokens[denom].Balances.Delegated += convertedAmmount
 				case api.Unbonding:
-					c.Accounts[idx].Tokens[denom].Unbonding += convertedAmmount
+					c.Accounts[idx].Tokens[denom].Balances.Unbonding += convertedAmmount
 				}
 			}
 		}
@@ -144,7 +141,7 @@ func (c *Chain) ProcessResponse(resp api.Response, idx int, client *http.Client)
 
 // GetDenomMetadata checks if the provided denom is part of a chain's external asset list
 // and returns the UI friendly name and exponent
-func GetDenomMetadata(denom string, chain *Chain, client *http.Client) TokenDetail {
+func GetDenomMetadata(denom string, chain *Chain, client *http.Client) (string, int) {
 	var symbol string
 	exponent := 0
 
@@ -153,19 +150,23 @@ func GetDenomMetadata(denom string, chain *Chain, client *http.Client) TokenDeta
 	}
 	// in case asset details are missing
 	if exponent == 0 {
-		denomMetadata, _ := api.GetDenomMetadataFromBank(denom, chain.RestEndpoint, client)
+		denomMetadata := &api.DenomMetadataResponse{}
+		if err := denomMetadata.QueryMetadataFromBank(denom, chain.RestEndpoint, client); err != nil {
+			log.Error().Err(err).Msg(fmt.Sprintf("getting metadata from bank for: %s", denom))
+		}
 		if denomMetadata.Metadata.Base == "" {
 			symbol = denom
 			exponent = 6
 		} else {
 			symbol = strings.ToUpper(denomMetadata.Metadata.Display)
-			exponent = api.GetExponent(&denomMetadata)
+			exponent = denomMetadata.GetExponent()
 		}
+
 	}
 
 	// If it's an IBC denom add '(IBC)' to the symbol
 	if strings.HasPrefix(strings.ToUpper(denom), "IBC/") {
 		symbol = symbol + " (IBC)"
 	}
-	return TokenDetail{symbol, exponent}
+	return symbol, exponent
 }

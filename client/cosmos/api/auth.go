@@ -3,9 +3,11 @@ package api
 import (
 	"encoding/json"
 	"net/http"
-
-	"github.com/informalsystems/stakooler/client/cosmos/model"
 )
+
+type Bech32PrefixResponse struct {
+	Bech32Prefix string `json:"bech32_prefix"`
+}
 
 type AcctResponse struct {
 	Account struct {
@@ -42,7 +44,7 @@ type AcctResponse struct {
 	} `json:"account"`
 }
 
-func (a AcctResponse) GetBalances() map[int]map[string]string {
+func (a *AcctResponse) GetBalances() map[int]map[string]string {
 	balances := make(map[int]map[string]string)
 	balances[OriginalVesting] = make(map[string]string)
 	balances[DelegatedVesting] = make(map[string]string)
@@ -57,35 +59,34 @@ func (a AcctResponse) GetBalances() map[int]map[string]string {
 	return balances
 }
 
-func GetPrefix(endpointURL string, client *http.Client) (response model.Bech32PrefixResponse, err error) {
+func (p *Bech32PrefixResponse) GetPrefix(endpointURL string, client *http.Client) error {
 	var body []byte
 
 	url := endpointURL + "/cosmos/auth/v1beta1/bech32"
-	body, err = HttpGet(url, client)
+	body, err := HttpGet(url, client)
 	if err != nil {
-		return
+		return err
 	}
 
-	err = json.Unmarshal(body, &response)
+	err = json.Unmarshal(body, p)
 	if err != nil {
-		return
+		return err
 	}
-	return
+	return err
 }
 
-func GetAccount(address string, endpoint string, client *http.Client) (response *AcctResponse, err error) {
+func (a *AcctResponse) QueryAuth(address string, endpoint string, client *http.Client) error {
 	var body []byte
 
 	url := endpoint + "/cosmos/auth/v1beta1/accounts/" + address
-	body, err = HttpGet(url, client)
+	body, err := HttpGet(url, client)
 	if err != nil {
-		return
+		return err
 	}
 
-	response = &AcctResponse{}
-	err = json.Unmarshal(body, response)
+	err = json.Unmarshal(body, a)
 	if err != nil {
-		return
+		return err
 	}
-	return
+	return nil
 }

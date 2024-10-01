@@ -66,14 +66,14 @@ It shows the validator's voting power, voting power percentage, ranking, number 
 
 						// Load assets list
 						// Get Assets list for the chain
-						assets, err := api.GetAssetsList(validator.Chain.Id, httpClient)
+						assets, err := api.QueryAssetList(validator.Chain.Id, httpClient)
 						if err != nil {
 							log.Fatal().Err(err).Str("chain", validator.Chain.Id).Msg("cannot retrieve assets list")
 							os.Exit(1)
 						}
 
 						for _, asset := range assets.Assets {
-							denom, err := api.GetStakingParams(validator.Chain.RestEndpoint, httpClient)
+							denom, err := api.QueryParams(validator.Chain.RestEndpoint, httpClient)
 							if err != nil {
 								log.Fatal().Err(err).Str("chain", validator.Chain.Id).Msg("cannot retrieve staking params")
 								os.Exit(1)

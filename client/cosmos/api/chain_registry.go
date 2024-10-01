@@ -42,7 +42,7 @@ func (a *AssetList) SearchForAsset(denom string) (string, int) {
 	return denom, 0
 }
 
-func (a *AssetList) GetAssetsList(chain string, client *http.Client) error {
+func (a *AssetList) QueryAssetList(chain string, client *http.Client) error {
 	var body []byte
 
 	url := "https://chains.cosmos.directory/" + chain + "/assetlist"
@@ -58,7 +58,7 @@ func (a *AssetList) GetAssetsList(chain string, client *http.Client) error {
 	return nil
 }
 
-func (c *ChainData) GetChainData(chain string, client *http.Client) error {
+func (c *ChainData) QueryChainData(chain string, client *http.Client) error {
 	var body []byte
 
 	url := "https://chains.cosmos.directory/" + chain + "/chain"

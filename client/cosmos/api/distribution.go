@@ -51,40 +51,38 @@ func (c *CommissionResponse) GetBalances() map[int]map[string]string {
 	return balances
 }
 
-func GetRewards(address string, endpoint string, client *http.Client) (response *RewardsResponse, err error) {
+func (r *RewardsResponse) QueryRewards(address string, endpoint string, client *http.Client) error {
 	var body []byte
 
 	url := endpoint + "/cosmos/distribution/v1beta1/delegators/" + address + "/rewards"
-	body, err = HttpGet(url, client)
+	body, err := HttpGet(url, client)
 	if err != nil {
-		return
+		return err
 	}
 
-	response = &RewardsResponse{}
-	err = json.Unmarshal(body, response)
+	err = json.Unmarshal(body, r)
 	if err != nil {
-		return
+		return err
 	}
-	return
+	return err
 }
 
-func GetCommissions(validator string, endpoint string, client *http.Client) (response *CommissionResponse, err error) {
+func (c *CommissionResponse) QueryCommission(validator string, endpoint string, client *http.Client) error {
 	var body []byte
 
 	url := endpoint + "/cosmos/distribution/v1beta1/validators/" + validator + "/commission"
-	body, err = HttpGet(url, client)
+	body, err := HttpGet(url, client)
 	if err != nil {
 		if strings.Contains(string(body), "validator does not exist") {
-			return nil, nil
+			return nil
 		} else {
-			return
+			return err
 		}
 	}
 
-	response = &CommissionResponse{}
-	err = json.Unmarshal(body, response)
+	err = json.Unmarshal(body, c)
 	if err != nil {
-		return
+		return err
 	}
-	return
+	return err
 }

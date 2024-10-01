@@ -3,13 +3,14 @@ package display
 import (
 	"encoding/csv"
 	"fmt"
-	"github.com/informalsystems/stakooler/client/cosmos/query"
 	"log"
 	"os"
 	"time"
+
+	"github.com/informalsystems/stakooler/client/cosmos/model"
 )
 
-func WriteAccountsCSV(chains *query.Chains) {
+func WriteAccountsCSV(chains []*model.Chain) {
 	w := csv.NewWriter(os.Stdout)
 	defer w.Flush()
 
@@ -18,7 +19,7 @@ func WriteAccountsCSV(chains *query.Chains) {
 		log.Fatalln("error writing record to file", err)
 	}
 
-	for _, chain := range chains.Entries {
+	for _, chain := range chains {
 		for _, acct := range chain.Accounts {
 			entries := acct.Tokens
 
@@ -33,21 +34,25 @@ func WriteAccountsCSV(chains *query.Chains) {
 				}
 			} else {
 				for i := range acct.Tokens {
-					total := entries[i].BankBalance + entries[i].Rewards + entries[i].Delegation + entries[i].Unbonding + entries[i].Commission
+					total := entries[i].Balances.Bank +
+						entries[i].Balances.Rewards +
+						entries[i].Balances.Delegated +
+						entries[i].Balances.Unbonding +
+						entries[i].Balances.Commission
 					record := []string{
 						acct.Name,
 						acct.Address,
 						chain.Id,
 						acct.BlockHeight,
-						acct.BlockTime.Format(time.RFC3339Nano),
+						acct.BlockTime.Format(time.DateTime),
 						acct.Tokens[i].DisplayName,
-						fmt.Sprintf("%f", acct.Tokens[i].BankBalance),
-						fmt.Sprintf("%f", acct.Tokens[i].Rewards),
-						fmt.Sprintf("%f", acct.Tokens[i].Delegation),
-						fmt.Sprintf("%f", acct.Tokens[i].Unbonding),
-						fmt.Sprintf("%f", acct.Tokens[i].Commission),
-						fmt.Sprintf("%f", acct.Tokens[i].OriginalVesting),
-						fmt.Sprintf("%f", acct.Tokens[i].DelegatedVesting),
+						fmt.Sprintf("%f", acct.Tokens[i].Balances.Bank),
+						fmt.Sprintf("%f", acct.Tokens[i].Balances.Rewards),
+						fmt.Sprintf("%f", acct.Tokens[i].Balances.Delegated),
+						fmt.Sprintf("%f", acct.Tokens[i].Balances.Unbonding),
+						fmt.Sprintf("%f", acct.Tokens[i].Balances.Commission),
+						fmt.Sprintf("%f", acct.Tokens[i].Balances.OriginalVesting),
+						fmt.Sprintf("%f", acct.Tokens[i].Balances.DelegatedVesting),
 						fmt.Sprintf("%f", total),
 					}
 					if err := w.Write(record); err != nil {

@@ -2,35 +2,42 @@ package display
 
 import (
 	"fmt"
-	"github.com/informalsystems/stakooler/client/cosmos/query"
-	"github.com/jedib0t/go-pretty/v6/table"
-	"github.com/jedib0t/go-pretty/v6/text"
 	"os"
 	"strings"
+
+	"github.com/informalsystems/stakooler/client/cosmos/model"
+
+	"github.com/jedib0t/go-pretty/v6/table"
+	"github.com/jedib0t/go-pretty/v6/text"
 )
 
-func PrintAccountDetailsTable(chains *query.Chains) {
-	for _, chain := range chains.Entries {
+func PrintAccountDetailsTable(chains []*model.Chain) {
+	for _, chain := range chains {
 		t := table.NewWriter()
 		t.SetOutputMirror(os.Stdout)
-		t.SetTitle(strings.ToUpper(fmt.Sprintf("Details for %s", chain.Name)))
-		t.SetCaption(fmt.Sprintf("Retrieved information for %d accounts", len(chain.Accounts)))
+		t.SetTitle(strings.ToUpper(fmt.Sprintf("%d accounts for %s", len(chain.Accounts), chain.Name)))
 		t.AppendHeader(table.Row{"Name", "Account", "Token", "Balance", "Rewards", "Staked", "Unbonding", "Commissions", "Original Vesting", "Delegated Vesting", "Total"})
 
 		for _, account := range chain.Accounts {
 			for _, e := range account.Tokens {
-				total := e.OriginalVesting - e.DelegatedVesting + e.BankBalance + e.Rewards + e.Delegation + e.Unbonding + e.Commission
+				total := e.Balances.OriginalVesting -
+					e.Balances.DelegatedVesting +
+					e.Balances.Bank +
+					e.Balances.Rewards +
+					e.Balances.Delegated +
+					e.Balances.Unbonding +
+					e.Balances.Commission
 				t.AppendRow([]interface{}{
 					account.Name,
 					account.Address,
 					e.DisplayName,
-					FilterZeroValue(e.BankBalance),
-					FilterZeroValue(e.Rewards),
-					FilterZeroValue(e.Delegation),
-					FilterZeroValue(e.Unbonding),
-					FilterZeroValue(e.Commission),
-					FilterZeroValue(e.OriginalVesting),
-					FilterZeroValue(e.DelegatedVesting),
+					FilterZeroValue(e.Balances.Bank),
+					FilterZeroValue(e.Balances.Rewards),
+					FilterZeroValue(e.Balances.Delegated),
+					FilterZeroValue(e.Balances.Unbonding),
+					FilterZeroValue(e.Balances.Commission),
+					FilterZeroValue(e.Balances.OriginalVesting),
+					FilterZeroValue(e.Balances.DelegatedVesting),
 					FilterZeroValue(total),
 				})
 

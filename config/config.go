@@ -3,8 +3,6 @@ package config
 import (
 	"encoding/hex"
 	"fmt"
-	"github.com/rs/zerolog/log"
-	"github.com/spf13/viper"
 	"net/http"
 	"path/filepath"
 	"slices"
@@ -13,33 +11,10 @@ import (
 	"github.com/cosmos/cosmos-sdk/types/bech32"
 	"github.com/informalsystems/stakooler/client/cosmos/api"
 	"github.com/informalsystems/stakooler/client/cosmos/model"
-	"github.com/informalsystems/stakooler/client/cosmos/query"
+
+	"github.com/rs/zerolog/log"
+	"github.com/spf13/viper"
 )
-
-type AccountConfig struct {
-	Name    string
-	Address string
-	Chain   string
-}
-
-type ValidatorsConfig struct {
-	Valoper string
-	Chain   string
-}
-
-type ChainConfig struct {
-	ID       string
-	LCD      string
-	Denom    string
-	Exponent int
-}
-
-type Configuration struct {
-	Accounts   []AccountConfig
-	Validators []ValidatorsConfig
-	Chains     []ChainConfig
-	Zabbix     model.ZabbixConfig
-}
 
 func ReadAccountData(path string) (*model.RawAccountData, error) {
 	var rawAcctData model.RawAccountData
@@ -71,24 +46,25 @@ func ReadAccountData(path string) (*model.RawAccountData, error) {
 	return &rawAcctData, nil
 }
 
-func ParseChainConfig(data *model.RawAccountData, httpClient *http.Client) query.Chains {
-	var chains query.Chains
+func ParseAccountsConfig(data *model.RawAccountData, httpClient *http.Client) []*model.Chain {
+	var chains []*model.Chain
 	for _, chain := range data.Chains {
-		chainData := &query.Chain{
+		chainData := &model.Chain{
 			Name:         chain.Name,
 			Id:           chain.Id,
 			RestEndpoint: chain.Rest,
 			AssetList:    &api.AssetList{},
 		}
 
-		if err := chainData.AssetList.GetAssetsList(chain.Name, httpClient); err != nil {
+		if err := chainData.AssetList.QueryAssetList(chain.Name, httpClient); err != nil {
 			log.Error().Err(err).Msg(fmt.Sprintf("query asset list: %s", chain.Id))
 		}
 
-		if prefix, err := api.GetPrefix(chainData.RestEndpoint, httpClient); err != nil {
+		prefixResponse := api.Bech32PrefixResponse{}
+		if err := prefixResponse.GetPrefix(chainData.RestEndpoint, httpClient); err != nil {
 			log.Error().Err(err).Msg(fmt.Sprintf("query chain prefix, trying asset list %s", chainData.Id))
 			chainDataRegistry := api.ChainData{}
-			if err = chainDataRegistry.GetChainData(chain.Name, httpClient); err != nil {
+			if err = chainDataRegistry.QueryChainData(chain.Name, httpClient); err != nil {
 				log.Error().Err(err).Msg(fmt.Sprintf("query chain data, skipping chain: %s", chainData.Id))
 				continue
 			} else {
@@ -98,11 +74,11 @@ func ParseChainConfig(data *model.RawAccountData, httpClient *http.Client) query
 			// mediblock incorrectly shows cosmos as the prefix, so here we are, setting it manually
 			chainData.Bech32Prefix = "panacea"
 		} else {
-			chainData.Bech32Prefix = prefix.Bech32Prefix
+			chainData.Bech32Prefix = prefixResponse.Bech32Prefix
 		}
 
-		params, err := api.GetStakingParams(chainData.RestEndpoint, httpClient)
-		if err != nil {
+		params := &api.StakingParamsResponse{}
+		if err := params.QueryParams(chainData.RestEndpoint, httpClient); err != nil {
 			log.Error().Err(err).Msg(fmt.Sprintf("query staking paramas, skipping chain: %s", chainData.Id))
 		} else {
 			chainData.BondDenom = params.ParamsResponse.BondDenom
@@ -137,7 +113,7 @@ func ParseChainConfig(data *model.RawAccountData, httpClient *http.Client) query
 				})
 			}
 		}
-		chains.Entries = append(chains.Entries, chainData)
+		chains = append(chains, chainData)
 	}
 	return chains
 }

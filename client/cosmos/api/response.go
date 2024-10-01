@@ -8,6 +8,6 @@ const Commission = 5
 const Delegation = 6
 const Unbonding = 7
 
-type Response interface {
+type AccountQueryResponse interface {
 	GetBalances() map[int]map[string]string
 }
