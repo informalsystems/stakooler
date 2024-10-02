@@ -1,11 +1,5 @@
 package model
 
-type ZabbixConfig struct {
-	Server string
-	Port   int
-	Host   string
-}
-
 type RawAccountData struct {
 	Accounts []struct {
 		Name      string `json:"name"`

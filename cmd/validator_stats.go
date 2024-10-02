@@ -119,6 +119,5 @@ It shows the validator's voting power, voting power percentage, ranking, number 
 
 func init() {
 	flagCsvValidatorStats = validatorStatsCmd.Flags().BoolP("csv", "c", false, "output the result to a csv format")
-	flagZbxValidatorStats = validatorStatsCmd.Flags().BoolP("zbx", "z", false, "push the result to a zabbix trapper item")
 	validatorCmd.AddCommand(validatorStatsCmd)
 }

@@ -73,10 +73,6 @@ It shows tokens balance, rewards, delegation and unbonding values per account`,
 
 		if *flagCsv {
 			display.WriteAccountsCSV(chains)
-		} else if *flagZbxAcctDetails {
-			//			display.ZbxSendChainDiscovery(&tomlConfig)
-			//			display.ZbxSendAccountsDiscovery(&tomlConfig)
-			//			display.ZbxAccountsDetails(&tomlConfig)
 		} else {
 			display.PrintAccountDetailsTable(chains)
 		}
@@ -85,6 +81,5 @@ It shows tokens balance, rewards, delegation and unbonding values per account`,
 
 func init() {
 	flagCsv = accountDetailsCmd.Flags().BoolP("csv", "c", false, "output the result to a csv format")
-	flagZbxAcctDetails = accountDetailsCmd.Flags().BoolP("zbx", "z", false, "push the result to a zabbix trapper item")
 	accountsCmd.AddCommand(accountDetailsCmd)
 }
