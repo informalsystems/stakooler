@@ -1,16 +1,14 @@
 module github.com/informalsystems/stakooler
 
-go 1.17
+go 1.22
 
 require (
-	github.com/adubkov/go-zabbix v0.0.0-20170118040903-3c6a95ec4fdc
 	github.com/cosmos/cosmos-sdk v0.47.3
 	github.com/jedib0t/go-pretty/v6 v6.2.4
 	github.com/rs/zerolog v1.29.1
 	github.com/schollz/progressbar/v3 v3.8.3
 	github.com/spf13/cobra v1.6.1
 	github.com/spf13/viper v1.14.0
-	golang.org/x/text v0.14.0
 )
 
 require (
@@ -36,6 +34,7 @@ require (
 	golang.org/x/crypto v0.17.0 // indirect
 	golang.org/x/sys v0.15.0 // indirect
 	golang.org/x/term v0.15.0 // indirect
+	golang.org/x/text v0.14.0 // indirect
 	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect

@@ -2,81 +2,68 @@ package display
 
 import (
 	"fmt"
-	"github.com/informalsystems/stakooler/client/cosmos/model"
-	"github.com/jedib0t/go-pretty/v6/table"
-	"github.com/jedib0t/go-pretty/v6/text"
-	"golang.org/x/text/language"
-	"golang.org/x/text/message"
 	"os"
 	"strings"
-	"time"
+
+	"github.com/informalsystems/stakooler/client/cosmos/model"
+
+	"github.com/jedib0t/go-pretty/v6/table"
+	"github.com/jedib0t/go-pretty/v6/text"
 )
 
-func PrintAccountDetailsTable(accounts *model.Accounts) {
-	t := table.NewWriter()
-	t.SetOutputMirror(os.Stdout)
-	t.SetTitle(strings.ToUpper("Accounts - Details"))
-	t.SetCaption(fmt.Sprintf("Retrieved information for %d accounts", len(accounts.Entries)))
-	t.AppendHeader(table.Row{"Name", "Account", "Token", "Balance", "Rewards", "Staked", "Unbonding", "Commissions", "Original Vesting", "Delegated Vesting", "Total"})
+func PrintAccountDetailsTable(chains []*model.Chain) {
+	for _, chain := range chains {
+		t := table.NewWriter()
+		t.SetOutputMirror(os.Stdout)
+		t.SetTitle(strings.ToUpper(fmt.Sprintf("%d accounts for %s", len(chain.Accounts), chain.Name)))
+		t.AppendHeader(table.Row{"Name", "Account", "Token", "Balance", "Rewards", "Staked", "Unbonding", "Commissions", "Original Vesting", "Delegated Vesting", "Total"})
 
-	for acctIdx := range accounts.Entries {
-		entries := accounts.Entries[acctIdx].TokensEntry
-		// To store the keys in slice in sorted order
-
-		for i := range accounts.Entries[acctIdx].TokensEntry {
-			total := entries[i].Vesting - entries[i].DelegatedVesting + entries[i].Balance + entries[i].Reward + entries[i].Delegation + entries[i].Unbonding + entries[i].Commission
-			if i == 0 {
+		for _, account := range chain.Accounts {
+			for _, e := range account.Tokens {
+				total := e.Balances.OriginalVesting -
+					e.Balances.DelegatedVesting +
+					e.Balances.Bank +
+					e.Balances.Rewards +
+					e.Balances.Delegated +
+					e.Balances.Unbonding +
+					e.Balances.Commission
 				t.AppendRow([]interface{}{
-					accounts.Entries[acctIdx].Name,
-					accounts.Entries[acctIdx].Address,
-					accounts.Entries[acctIdx].TokensEntry[i].DisplayName,
-					FilterZeroValue(accounts.Entries[acctIdx].TokensEntry[i].Balance),
-					FilterZeroValue(accounts.Entries[acctIdx].TokensEntry[i].Reward),
-					FilterZeroValue(accounts.Entries[acctIdx].TokensEntry[i].Delegation),
-					FilterZeroValue(accounts.Entries[acctIdx].TokensEntry[i].Unbonding),
-					FilterZeroValue(accounts.Entries[acctIdx].TokensEntry[i].Commission),
-					FilterZeroValue(accounts.Entries[acctIdx].TokensEntry[i].Vesting),
-					FilterZeroValue(accounts.Entries[acctIdx].TokensEntry[i].DelegatedVesting),
+					account.Name,
+					account.Address,
+					e.DisplayName,
+					FilterZeroValue(e.Balances.Bank),
+					FilterZeroValue(e.Balances.Rewards),
+					FilterZeroValue(e.Balances.Delegated),
+					FilterZeroValue(e.Balances.Unbonding),
+					FilterZeroValue(e.Balances.Commission),
+					FilterZeroValue(e.Balances.OriginalVesting),
+					FilterZeroValue(e.Balances.DelegatedVesting),
 					FilterZeroValue(total),
 				})
-			} else {
-				t.AppendRow([]interface{}{
-					"",
-					"",
-					accounts.Entries[acctIdx].TokensEntry[i].DisplayName,
-					FilterZeroValue(accounts.Entries[acctIdx].TokensEntry[i].Balance),
-					FilterZeroValue(accounts.Entries[acctIdx].TokensEntry[i].Reward),
-					FilterZeroValue(accounts.Entries[acctIdx].TokensEntry[i].Delegation),
-					FilterZeroValue(accounts.Entries[acctIdx].TokensEntry[i].Unbonding),
-					FilterZeroValue(accounts.Entries[acctIdx].TokensEntry[i].Commission),
-					FilterZeroValue(accounts.Entries[acctIdx].TokensEntry[i].Vesting),
-					FilterZeroValue(accounts.Entries[acctIdx].TokensEntry[i].DelegatedVesting),
-					FilterZeroValue(total),
-				})
+
 			}
-
+			t.AppendSeparator()
 		}
-		t.AppendSeparator()
-	}
 
-	t.SetColumnConfigs([]table.ColumnConfig{
-		{Name: "Name", Align: text.AlignLeft, AlignHeader: text.AlignCenter},
-		{Name: "Account", Align: text.AlignLeft, AlignHeader: text.AlignCenter},
-		{Name: "Token", Align: text.AlignLeft, AlignHeader: text.AlignCenter},
-		{Name: "Balance", Align: text.AlignRight, AlignHeader: text.AlignCenter},
-		{Name: "Rewards", Align: text.AlignRight, AlignHeader: text.AlignCenter},
-		{Name: "Staked", Align: text.AlignRight, AlignHeader: text.AlignCenter},
-		{Name: "Unbonding", Align: text.AlignRight, AlignHeader: text.AlignCenter},
-		{Name: "Commissions", Align: text.AlignRight, AlignHeader: text.AlignCenter},
-		{Name: "Original Vesting", Align: text.AlignRight, AlignHeader: text.AlignCenter},
-		{Name: "Delegated Vesting", Align: text.AlignRight, AlignHeader: text.AlignCenter},
-		{Name: "Total", Align: text.AlignRight, AlignHeader: text.AlignCenter},
-	})
-	t.Render()
+		t.SetColumnConfigs([]table.ColumnConfig{
+			{Name: "Name", Align: text.AlignLeft, AlignHeader: text.AlignCenter},
+			{Name: "Account", Align: text.AlignLeft, AlignHeader: text.AlignCenter},
+			{Name: "Token", Align: text.AlignLeft, AlignHeader: text.AlignCenter},
+			{Name: "BankBalance", Align: text.AlignRight, AlignHeader: text.AlignCenter},
+			{Name: "Rewards", Align: text.AlignRight, AlignHeader: text.AlignCenter},
+			{Name: "Staked", Align: text.AlignRight, AlignHeader: text.AlignCenter},
+			{Name: "Unbonding", Align: text.AlignRight, AlignHeader: text.AlignCenter},
+			{Name: "Commissions", Align: text.AlignRight, AlignHeader: text.AlignCenter},
+			{Name: "Original Vesting", Align: text.AlignRight, AlignHeader: text.AlignCenter},
+			{Name: "Delegated Vesting", Align: text.AlignRight, AlignHeader: text.AlignCenter},
+			{Name: "Total", Align: text.AlignRight, AlignHeader: text.AlignCenter},
+		})
+		t.Render()
+	}
 	return
 }
 
-func PrintValidatorStasTable(validators *model.ValidatorList) {
+/*func PrintValidatorStasTable(validators *model.ValidatorList) {
 	t := table.NewWriter()
 	t.SetOutputMirror(os.Stdout)
 	t.SetTitle(strings.ToUpper("Validator - Statistics"))
@@ -89,7 +76,7 @@ func PrintValidatorStasTable(validators *model.ValidatorList) {
 
 		t.AppendRow([]interface{}{
 			validator.Moniker,
-			validator.Chain.ID,
+			validator.Chain.Id,
 			validator.ValoperAddress,
 			validator.BlockTime.Format(time.RFC822),
 			validator.BlockHeight,
@@ -121,6 +108,7 @@ func PrintValidatorStasTable(validators *model.ValidatorList) {
 	t.Render()
 	return
 }
+*/
 
 func FilterZeroValue(value float64) string {
 	if value > 0.00000 {

@@ -2,13 +2,12 @@ package cmd
 
 import (
 	"fmt"
-	"os"
 
-	"github.com/informalsystems/stakooler/client/cosmos"
 	"github.com/informalsystems/stakooler/client/cosmos/api"
-	"github.com/informalsystems/stakooler/client/cosmos/querier"
 	"github.com/informalsystems/stakooler/client/display"
 	"github.com/informalsystems/stakooler/config"
+
+	"github.com/rs/zerolog/log"
 	"github.com/schollz/progressbar/v3"
 	"github.com/spf13/cobra"
 )
@@ -27,18 +26,20 @@ var accountDetailsCmd = &cobra.Command{
 It shows tokens balance, rewards, delegation and unbonding values per account`,
 	Run: func(cmd *cobra.Command, args []string) {
 		barEnabled := !*flagCsv && !*flagZbxAcctDetails
-		config, err := config.LoadConfig(flagConfigPath)
+		rawAcctData, err := config.ReadAccountData("")
 		if err != nil {
-			fmt.Println("error reading configuration file:", err)
-			os.Exit(1)
+			log.Fatal().Err(err).Msg("error reading account data file")
 		}
 
 		var bar *progressbar.ProgressBar
 
+		httpClient := api.NewHttpClient()
+		chains := config.ParseAccountsConfig(rawAcctData, httpClient)
+
 		if barEnabled {
 			// Progress bar
 			// iterations are the api calls number times the number of accounts
-			totalIterations := len(config.Accounts.Entries) * 6
+			totalIterations := len(chains)
 			bar = progressbar.NewOptions(totalIterations, progressbar.OptionEnableColorCodes(true), progressbar.OptionShowBytes(false), progressbar.OptionSetWidth(25), progressbar.OptionUseANSICodes(false), progressbar.OptionClearOnFinish(), progressbar.OptionSetPredictTime(false), progressbar.OptionSetTheme(progressbar.Theme{
 				Saucer:        "▪︎[reset]",
 				SaucerHead:    ">[reset]",
@@ -50,70 +51,35 @@ It shows tokens balance, rewards, delegation and unbonding values per account`,
 			bar = progressbar.New(0)
 		}
 
-		httpClient := cosmos.NewHttpClient()
+		for _, chain := range chains {
+			blockInfo := api.BlockResponse{}
+			if err := blockInfo.GetLatestBlock(chain.RestEndpoint, httpClient); err != nil {
+				log.Error().Err(err).Msg(fmt.Sprintf("failed to get latest block, skipping chain %s", chain.Id))
+			}
 
-		// Load each account details
-		for _, acct := range config.Accounts.Entries {
-
-			// Don't show this if csv option enabled
 			if barEnabled {
-				bar.Describe(fmt.Sprintf("Getting account %s details", acct.Address))
+				bar.Describe(fmt.Sprintf("Getting chain %s details", chain.Id))
 			}
 
-			// Get latest block information to include in the account
-			blockInfo, err := api.GetLatestBlock(acct.Chain, httpClient)
-			if err != nil {
-				bar.Describe(fmt.Sprintf("failed to get latest block: %s", err))
-			}
-			bar.Add(1)
-
-			acct.BlockHeight = blockInfo.Block.Header.Height
-			acct.BlockTime = blockInfo.Block.Header.Time
-
-			err = querier.LoadAuthData(acct, httpClient)
-			if err != nil {
-				bar.Describe(err.Error())
-			}
-
-			err = querier.LoadBankBalances(acct, httpClient)
-			if err != nil {
-				bar.Describe(err.Error())
-			}
-			bar.Add(1)
-
-			err = querier.LoadDistributionData(acct, httpClient)
-			if err != nil {
-				bar.Describe(err.Error())
-			}
-			bar.Add(1)
-
-			err = querier.LoadStakingData(acct, httpClient)
-			if err != nil {
-				bar.Describe(err.Error())
+			if err = chain.FetchAccountBalances(blockInfo, httpClient); err != nil {
+				log.Error().Err(err).Msg(fmt.Sprintf("failed fetching accounts for %s", chain.Name))
 			}
 			bar.Add(1)
 		}
 
-		// Hide bar
-		bar.Finish()
+		if err := bar.Finish(); err != nil {
+			log.Error().Err(err).Msg(fmt.Sprintf("failed to finish bar"))
+		}
 
-		// If csv flag specified use csv output
 		if *flagCsv {
-			// write csv file
-			display.WriteAccountsCSV(&config.Accounts)
-		} else if *flagZbxAcctDetails {
-			display.ZbxSendChainDiscovery(&config)
-			display.ZbxSendAccountsDiscovery(&config)
-			display.ZbxAccountsDetails(&config)
+			display.WriteAccountsCSV(chains)
 		} else {
-			// Print table information
-			display.PrintAccountDetailsTable(&config.Accounts)
+			display.PrintAccountDetailsTable(chains)
 		}
 	},
 }
 
 func init() {
 	flagCsv = accountDetailsCmd.Flags().BoolP("csv", "c", false, "output the result to a csv format")
-	flagZbxAcctDetails = accountDetailsCmd.Flags().BoolP("zbx", "z", false, "push the result to a zabbix trapper item")
 	accountsCmd.AddCommand(accountDetailsCmd)
 }

@@ -5,62 +5,183 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-
-	"github.com/informalsystems/stakooler/client/cosmos"
-	"github.com/informalsystems/stakooler/client/cosmos/model"
+	"time"
 )
 
-func GetDelegations(account *model.Account, client *http.Client) (response model.Delegations, err error) {
-	var body []byte
-
-	url := account.Chain.LCD + "/cosmos/staking/v1beta1/delegations/" + account.Address
-	body, err = cosmos.HttpGet(url, client)
-	if err != nil {
-		return
-	}
-	err = json.Unmarshal(body, &response)
-	if err != nil {
-		return
-	}
-	return
+type StakingParamsResponse struct {
+	ParamsResponse struct {
+		UnbondingTime     string `json:"unbonding_time"`
+		MaxValidators     int    `json:"max_validators"`
+		MaxEntries        int    `json:"max_entries"`
+		HistoricalEntries int    `json:"historical_entries"`
+		BondDenom         string `json:"bond_denom"`
+		MinCommissionRate string `json:"min_commission_rate"`
+	} `json:"params"`
 }
 
-func GetUnbondings(account *model.Account, client *http.Client) (response model.Unbondings, err error) {
-	var body []byte
-
-	url := account.Chain.LCD + "/cosmos/staking/v1beta1/delegators/" + account.Address + "/unbonding_delegations"
-	body, err = cosmos.HttpGet(url, client)
-	if err != nil {
-		return
-	}
-
-	err = json.Unmarshal(body, &response)
-	if err != nil {
-		return
-	}
-	return
+type ValidatorSet struct {
+	BlockHeight string `json:"block_height"`
+	Validators  []struct {
+		Address string `json:"address"`
+		PubKey  struct {
+			Type string `json:"@type"`
+			Key  string `json:"key"`
+		} `json:"pub_key"`
+		VotingPower      string `json:"voting_power"`
+		ProposerPriority string `json:"proposer_priority"`
+	} `json:"validators"`
+	Pagination struct {
+		NextKey interface{} `json:"next_key"`
+		Total   string      `json:"total"`
+	} `json:"pagination"`
 }
 
-func GetStakingParams(chainEndpoint string, client *http.Client) (response model.Params, err error) {
+type Validators struct {
+	BlockHeight        string `json:"block_height,omitempty"`
+	ValidatorsResponse []struct {
+		OperatorAddress string `json:"operator_address"`
+		ConsensusPubkey struct {
+			Type string `json:"@type"`
+			Key  string `json:"key"`
+		} `json:"consensus_pubkey"`
+		Jailed          bool   `json:"jailed"`
+		Status          string `json:"status"`
+		Tokens          string `json:"tokens"`
+		DelegatorShares string `json:"delegator_shares"`
+		Description     struct {
+			Moniker         string `json:"moniker"`
+			Identity        string `json:"identity"`
+			Website         string `json:"website"`
+			SecurityContact string `json:"security_contact"`
+			Details         string `json:"details"`
+		} `json:"description"`
+		UnbondingHeight string    `json:"unbonding_height"`
+		UnbondingTime   time.Time `json:"unbonding_time"`
+		Commission      struct {
+			CommissionRates struct {
+				Rate          string `json:"rate"`
+				MaxRate       string `json:"max_rate"`
+				MaxChangeRate string `json:"max_change_rate"`
+			} `json:"commission_rates"`
+			UpdateTime time.Time `json:"update_time"`
+		} `json:"commission"`
+		MinSelfDelegation string `json:"min_self_delegation"`
+	} `json:"validators"`
+	Pagination struct {
+		NextKey interface{} `json:"next_key"`
+		Total   string      `json:"total"`
+	} `json:"pagination"`
+}
+
+type Delegations struct {
+	DelegationResponses []struct {
+		Delegation struct {
+			DelegatorAddress string `json:"delegator_address"`
+			ValidatorAddress string `json:"validator_address"`
+			Shares           string `json:"shares"`
+		} `json:"delegation"`
+		Balance struct {
+			Denom  string `json:"denom"`
+			Amount string `json:"amount"`
+		} `json:"balance"`
+	} `json:"delegation_responses"`
+	Pagination struct {
+		NextKey interface{} `json:"next_key"`
+		Total   string      `json:"total"`
+	} `json:"pagination"`
+}
+
+type Unbondings struct {
+	UnbondingResponses []struct {
+		DelegatorAddress string `json:"delegator_address"`
+		ValidatorAddress string `json:"validator_address"`
+		Entries          []struct {
+			CreationHeight string    `json:"creation_height"`
+			CompletionTime time.Time `json:"completion_time"`
+			InitialBalance string    `json:"initial_balance"`
+			Balance        string    `json:"balance"`
+		} `json:"entries"`
+	} `json:"unbonding_responses"`
+	Pagination struct {
+		NextKey interface{} `json:"next_key"`
+		Total   string      `json:"total"`
+	} `json:"pagination"`
+}
+
+func (d *Delegations) GetBalances() map[int]map[string]string {
+	balances := make(map[int]map[string]string)
+	balances[Delegation] = make(map[string]string)
+
+	for _, balance := range d.DelegationResponses {
+		balances[Delegation][balance.Balance.Denom] = balance.Balance.Amount
+	}
+	return balances
+}
+
+func (u *Unbondings) GetBalances() map[int]map[string]string {
+	balances := make(map[int]map[string]string)
+	balances[Unbonding] = make(map[string]string)
+
+	for _, response := range u.UnbondingResponses {
+		for _, entry := range response.Entries {
+			balances[Unbonding]["denom"] = entry.Balance
+		}
+	}
+	return balances
+}
+
+func (d *Delegations) QueryDelegations(address string, endpoint string, client *http.Client) error {
+	var body []byte
+
+	url := endpoint + "/cosmos/staking/v1beta1/delegations/" + address
+	body, err := HttpGet(url, client)
+	if err != nil {
+		return err
+	}
+
+	err = json.Unmarshal(body, d)
+	if err != nil {
+		return err
+	}
+	return err
+}
+
+func (u *Unbondings) QueryUnbondings(address string, endpoint string, client *http.Client) error {
+	var body []byte
+
+	url := endpoint + "/cosmos/staking/v1beta1/delegators/" + address + "/unbonding_delegations"
+	body, err := HttpGet(url, client)
+	if err != nil {
+		return err
+	}
+
+	err = json.Unmarshal(body, u)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (p *StakingParamsResponse) QueryParams(chainEndpoint string, client *http.Client) error {
 	var body []byte
 
 	url := chainEndpoint + "/cosmos/staking/v1beta1/params"
-	body, err = cosmos.HttpGet(url, client)
+	body, err := HttpGet(url, client)
 	if err != nil {
-		return
+		return err
 	}
 
-	err = json.Unmarshal(body, &response)
+	err = json.Unmarshal(body, p)
 	if err != nil {
-		return
+		return err
 	}
-	return
+	return err
 }
 
-func GetChainValidators(validator *model.Validator) (model.Validators, error) {
-	var validators model.Validators
+func GetChainValidators(endpoint string) (Validators, error) {
+	var validators Validators
 
-	url := validator.Chain.LCD + "/cosmos/staking/v1beta1/validators?pagination.limit=1000&pagination.count_total=true&status=BOND_STATUS_BONDED"
+	url := endpoint + "/cosmos/staking/v1beta1/validators?pagination.limit=1000&pagination.count_total=true&status=BOND_STATUS_BONDED"
 	method := "GET"
 
 	client := &http.Client{}
@@ -92,9 +213,9 @@ func GetChainValidators(validator *model.Validator) (model.Validators, error) {
 	return validators, nil
 }
 
-func GetValidatorUnbondings(validator *model.Validator) (model.Unbondings, error) {
-	var unbondings model.Unbondings
-	url := validator.Chain.LCD + "/cosmos/staking/v1beta1/validators/" + validator.ValoperAddress + "/unbonding_delegations"
+func GetValidatorUnbondings(endpoint string, address string) (Unbondings, error) {
+	var unbondings Unbondings
+	url := endpoint + "/cosmos/staking/v1beta1/validators/" + address + "/unbonding_delegations"
 	method := "GET"
 
 	client := &http.Client{}
@@ -124,10 +245,10 @@ func GetValidatorUnbondings(validator *model.Validator) (model.Unbondings, error
 	return unbondings, nil
 }
 
-func GetValidatorDelegations(validator *model.Validator) (model.Delegations, error) {
-	var delegations model.Delegations
+func GetValidatorDelegations(endpoint string, valoper string) (Delegations, error) {
+	var delegations Delegations
 
-	url := validator.Chain.LCD + "/cosmos/staking/v1beta1/validators/" + validator.ValoperAddress + "/delegations?pagination.limit=15000&pagination.count_total=true"
+	url := endpoint + "/cosmos/staking/v1beta1/validators/" + valoper + "/delegations?pagination.limit=15000&pagination.count_total=true"
 	method := "GET"
 
 	client := &http.Client{}
