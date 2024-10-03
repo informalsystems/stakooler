@@ -25,7 +25,7 @@ var accountDetailsCmd = &cobra.Command{
 
 It shows tokens balance, rewards, delegation and unbonding values per account`,
 	Run: func(cmd *cobra.Command, args []string) {
-		barEnabled := !*flagCsv && !*flagZbxAcctDetails
+		barEnabled := !*flagCsv
 		rawAcctData, err := config.ReadAccountData("")
 		if err != nil {
 			log.Fatal().Err(err).Msg("error reading account data file")
