@@ -111,11 +111,43 @@ func (c *Chain) ParseAcctQueryResp(resp api.AccountQueryResponse, idx int, clien
 				convertedAmmount := floatAmount / math.Pow10(exponent)
 
 				if _, ok := c.Accounts[idx].Tokens[denom]; !ok {
+					USDprice := api.AssetPair{
+						AssetIdBase:  symbol,
+						AssetIdQuote: "USD",
+						Rate:         0,
+					}
+
+					err2 := USDprice.GetCoinApiQuote()
+					if err2 != nil {
+						err2 = USDprice.GetCoinGekoQuote()
+						if err2 != nil {
+							log.Error().Err(err).Msg(fmt.Sprintf("failed fetching price for %s", symbol))
+						}
+					}
+
+					CADprice := api.AssetPair{
+						AssetIdBase:  symbol,
+						AssetIdQuote: "CAD",
+					}
+
+					err3 := CADprice.GetCoinApiQuote()
+					if err3 != nil {
+						err3 = CADprice.GetCoinGekoQuote()
+						if err3 != nil {
+							log.Error().Err(err3).Msg(fmt.Sprintf("failed fetching price for %s", symbol))
+						}
+					}
+
 					c.Accounts[idx].Tokens[denom] = &Token{
 						DisplayName: symbol,
 						Denom:       denom,
+						PriceCAD:    CADprice.Rate,
+						PriceUSD:    USDprice.Rate,
 					}
 				}
+
+				c.Accounts[idx].TotalCAD += convertedAmmount * c.Accounts[idx].Tokens[denom].PriceCAD
+				c.Accounts[idx].TotalUSD += convertedAmmount * c.Accounts[idx].Tokens[denom].PriceUSD
 
 				switch balanceType {
 				case api.OriginalVesting:

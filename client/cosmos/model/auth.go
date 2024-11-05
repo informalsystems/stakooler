@@ -9,11 +9,15 @@ type Account struct {
 	BlockTime   time.Time
 	BlockHeight string
 	Tokens      map[string]*Token
+	TotalUSD    float64
+	TotalCAD    float64
 }
 
 type Token struct {
 	DisplayName string
 	Denom       string
+	PriceUSD    float64
+	PriceCAD    float64
 	Balances    struct {
 		Bank             float64
 		Rewards          float64

@@ -73,6 +73,7 @@ It shows tokens balance, rewards, delegation and unbonding values per account`,
 
 		if *flagCsv {
 			display.WriteAccountsCSV(chains)
+			display.WriteDollarValueReport(chains)
 		} else {
 			display.PrintAccountDetailsTable(chains)
 		}

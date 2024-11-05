@@ -16,7 +16,7 @@ func PrintAccountDetailsTable(chains []*model.Chain) {
 		t := table.NewWriter()
 		t.SetOutputMirror(os.Stdout)
 		t.SetTitle(strings.ToUpper(fmt.Sprintf("%d accounts for %s", len(chain.Accounts), chain.Name)))
-		t.AppendHeader(table.Row{"Name", "Account", "Token", "Balance", "Rewards", "Staked", "Unbonding", "Commissions", "Original Vesting", "Delegated Vesting", "Total"})
+		t.AppendHeader(table.Row{"Name", "Account", "Token", "Balance", "Rewards", "Staked", "Unbonding", "Commissions", "Original Vesting", "Delegated Vesting", "Total", "Total USD", "Total CAD"})
 
 		for _, account := range chain.Accounts {
 			for _, e := range account.Tokens {
@@ -39,6 +39,8 @@ func PrintAccountDetailsTable(chains []*model.Chain) {
 					FilterZeroValue(e.Balances.OriginalVesting),
 					FilterZeroValue(e.Balances.DelegatedVesting),
 					FilterZeroValue(total),
+					FilterZeroValue(total * e.PriceUSD),
+					FilterZeroValue(total * e.PriceCAD),
 				})
 
 			}
