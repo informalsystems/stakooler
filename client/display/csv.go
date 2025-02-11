@@ -10,6 +10,56 @@ import (
 	"github.com/informalsystems/stakooler/client/cosmos/model"
 )
 
+func WriteDollarValueReport(chains []*model.Chain) {
+	file, err := os.Create("dollar_value_report.csv")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	defer func(File *os.File) {
+		err = File.Close()
+		if err != nil {
+			return
+		}
+	}(file)
+
+	w := csv.NewWriter(file)
+	defer w.Flush()
+
+	header := []string{"account_name", "token", "rewards", "commissions", "total USD value", "total CAD value"}
+	if err = w.Write(header); err != nil {
+		log.Fatalln("error writing record to file", err)
+	}
+
+	accounts := make(map[string][]*model.Token)
+	for _, chain := range chains {
+		for _, account := range chain.Accounts {
+			if _, ok := accounts[account.Name]; !ok {
+				accounts[account.Name] = make([]*model.Token, 0)
+			}
+			for _, token := range account.Tokens {
+				accounts[account.Name] = append(accounts[account.Name], token)
+			}
+		}
+	}
+
+	for name, account := range accounts {
+		for _, token := range account {
+			record := []string{
+				name,
+				token.DisplayName,
+				fmt.Sprintf("%f", token.Balances.Rewards),
+				fmt.Sprintf("%f", token.Balances.Commission),
+				fmt.Sprintf("%f", (token.Balances.Rewards+token.Balances.Commission)*token.PriceUSD),
+				fmt.Sprintf("%f", (token.Balances.Rewards+token.Balances.Commission)*token.PriceCAD),
+			}
+			if err = w.Write(record); err != nil {
+				log.Fatalln("error writing record", err)
+			}
+		}
+	}
+}
+
 func WriteAccountsCSV(chains []*model.Chain) {
 	w := csv.NewWriter(os.Stdout)
 	defer w.Flush()
